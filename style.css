@@ -618,8 +618,9 @@
 
 @media (max-width: 700px) {
   #rm_extensions_block .se-native-topbar {
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
-    padding: 9px !important;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3px !important;
+    padding: 7px !important;
   }
 
   #rm_extensions_block .se-native-topbar h3 {
@@ -647,16 +648,43 @@
     grid-row: 2;
   }
 
+  #rm_extensions_block .se-native-topbar .checkbox_label,
   #rm_extensions_block .se-native-topbar .menu_button {
     width: 100%;
     min-width: 0;
-    padding: 7px 8px;
-    white-space: normal;
-    font-size: 0.72rem;
+    min-height: 29px;
+    height: 29px;
+    gap: 2px;
+    padding: 2px 3px !important;
+    overflow: hidden;
+    border-radius: 7px !important;
+    white-space: nowrap;
+    font-size: 9px !important;
+    line-height: 1;
   }
 
-  #rm_extensions_block .se-native-topbar .checkbox_label {
-    font-size: 0.69rem;
+  #rm_extensions_block
+    .se-native-topbar
+    :is(.checkbox_label, .menu_button)
+    span {
+    overflow: hidden;
+    line-height: 1;
+    letter-spacing: -0.2px;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  #rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) i {
+    flex: 0 0 auto;
+    margin: 0 1px !important;
+    font-size: 9px !important;
+  }
+
+  #rm_extensions_block .se-native-topbar input[type="checkbox"] {
+    width: 13px !important;
+    height: 13px !important;
+    min-width: 13px !important;
+    margin-right: 2px !important;
   }
 
   #simple-extension-ui {

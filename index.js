@@ -206,38 +206,108 @@ function comparisonKey(text) {
     .trim();
 }
 
+function identityKey(text) {
+  return comparisonKey(text).replace(
+    /(containers?|settings?|options?|panels?)$/gi,
+    "",
+  );
+}
+
+function editDistance(left, right) {
+  if (left === right) return 0;
+  if (!left.length) return right.length;
+  if (!right.length) return left.length;
+
+  let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] +
+          (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1),
+      );
+    }
+    previous = current;
+  }
+  return previous[right.length];
+}
+
+function sharedPrefixLength(left, right) {
+  const limit = Math.min(left.length, right.length);
+  let length = 0;
+  while (length < limit && left[length] === right[length]) length += 1;
+  return length;
+}
+
+function candidateScore(left, right) {
+  const a = identityKey(left);
+  const b = identityKey(right);
+  if (!a || !b) return 0;
+  if (a === b) return 100;
+
+  const shorter = Math.min(a.length, b.length);
+  if (shorter >= 5 && (a.includes(b) || b.includes(a))) return 88;
+
+  const prefix = sharedPrefixLength(a, b);
+  if (prefix >= 6 && prefix / shorter >= 0.7) return 76;
+
+  const longest = Math.max(a.length, b.length);
+  if (longest < 7) return 0;
+  const similarity = 1 - editDistance(a, b) / longest;
+  return similarity >= 0.72 ? Math.round(50 + similarity * 30) : 0;
+}
+
+function installedNativeScore(record, native) {
+  const basename = record.name.split("/").filter(Boolean).at(-1) || record.name;
+  const recordNames = [record.title, basename, record.name];
+  const nativeNames = [
+    native.title,
+    native.key,
+    native.element?.id,
+    native.element?.dataset?.name,
+    native.element?.dataset?.extension,
+  ];
+  let score = 0;
+  recordNames.forEach((recordName) => {
+    nativeNames.forEach((nativeName) => {
+      score = Math.max(score, candidateScore(recordName, nativeName));
+    });
+  });
+  return score;
+}
+
 function mergeInstalledCatalog() {
   const merged = new Map(state.nativeUnits);
   const unusedNative = new Set(state.nativeUnits.keys());
 
   state.installedRecords.forEach((record) => {
-    const displayKey = comparisonKey(record.title);
-    const basename =
-      record.name.split("/").filter(Boolean).at(-1) || record.name;
-    const internalKey = comparisonKey(basename);
     let match = null;
+    let bestScore = 0;
 
     for (const nativeKey of unusedNative) {
       const native = state.nativeUnits.get(nativeKey);
-      const nativeTitle = comparisonKey(native.title);
-      const nativeIdentity = comparisonKey(
-        `${native.key} ${native.element.id || ""}`,
-      );
-      if (
-        (displayKey && nativeTitle === displayKey) ||
-        (internalKey.length >= 4 &&
-          (nativeTitle.includes(internalKey) ||
-            internalKey.includes(nativeTitle) ||
-            nativeIdentity.includes(internalKey)))
-      ) {
+      const score = installedNativeScore(record, native);
+      if (score > bestScore) {
+        bestScore = score;
         match = native;
-        break;
       }
     }
 
-    if (match) {
+    if (match && bestScore >= 72) {
       unusedNative.delete(match.key);
+      const installedKey = `installed-${slugify(record.name)}`;
+      if (
+        state.settings?.assignments?.[installedKey] &&
+        !state.settings.assignments[match.key]
+      ) {
+        state.settings.assignments[match.key] =
+          state.settings.assignments[installedKey];
+        delete state.settings.assignments[installedKey];
+      }
       Object.assign(match, {
+        title: record.title,
         manifestName: record.name,
         originalIndex: record.originalIndex,
         hasSettings: true,
@@ -760,8 +830,17 @@ function toggleNativeSettings(key, row) {
     return;
   }
   closeNativeSettings();
-  const unit = state.units.get(key);
+  let unit = state.units.get(key);
   if (!unit) return;
+
+  if (!unit.element && unit.manifestName) {
+    scanNativeUnits();
+    unit =
+      [...state.units.values()].find(
+        (candidate) =>
+          candidate.element && candidate.manifestName === unit.manifestName,
+      ) || unit;
+  }
 
   const slot = document.createElement("div");
   slot.className = "se-settings-slot";
@@ -776,8 +855,8 @@ function toggleNativeSettings(key, row) {
     slot.append(empty);
   }
   row.insertAdjacentElement("afterend", slot);
-  setOnlyActiveNative(key);
-  state.activeKey = key;
+  setOnlyActiveNative(unit.key);
+  state.activeKey = unit.key;
   state.activeRow = row;
   row.classList.add("is-active");
   ensureNativeExpanded(unit);
