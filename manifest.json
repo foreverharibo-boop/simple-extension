@@ -1,0 +1,10 @@
+{
+  "display_name": "simple extension",
+  "loading_order": 9999,
+  "js": "index.js",
+  "css": "style.css",
+  "author": "담은",
+  "version": "0.1.0",
+  "auto_update": false,
+  "minimum_client_version": "1.18.0"
+}
