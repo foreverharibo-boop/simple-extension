@@ -18,6 +18,7 @@ const LEGACY_DEFAULT_FOLDER_IDS = Object.freeze([
 ]);
 
 const THEME_LABELS = Object.freeze({
+  "sillytavern-default": "기본 테마 색상",
   "minimal-white": "미니멀 화이트",
   "light-modern": "라이트 모던",
   "dark-modern": "다크 모던",
@@ -677,6 +678,9 @@ function render() {
 
 function applyTheme() {
   state.root?.setAttribute("data-se-theme", state.settings.theme);
+  state.root
+    ?.closest("#rm_extensions_block")
+    ?.setAttribute("data-se-theme", state.settings.theme);
 }
 
 function applySearch(value) {
