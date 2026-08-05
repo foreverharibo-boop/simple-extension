@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   ],
   assignments: {},
   openFolders: ["favorites"],
+  sort: "name-asc",
 });
 
 const THEME_LABELS = Object.freeze({
@@ -20,6 +21,13 @@ const THEME_LABELS = Object.freeze({
   "pastel-soft": "파스텔 소프트",
 });
 
+const SORT_LABELS = Object.freeze({
+  "name-asc": "이름순",
+  "name-desc": "이름 역순",
+  original: "원래 순서",
+  folder: "폴더순",
+});
+
 const state = {
   initialized: false,
   settings: null,
@@ -27,7 +35,10 @@ const state = {
   ui: null,
   parking: null,
   nativeColumns: [],
+  nativeUnits: new Map(),
   units: new Map(),
+  installedRecords: [],
+  installedReady: false,
   activeKey: null,
   activeRow: null,
   observer: null,
@@ -167,6 +178,80 @@ function stableKey(element, title, columnIndex, itemIndex) {
   return slugify(explicit || `${title}-${columnIndex}-${itemIndex}`);
 }
 
+function comparisonKey(text) {
+  return String(text || "")
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/\b(extension|확장|program|프로그램)\b/gi, "")
+    .replace(/[^a-z0-9가-힣]+/g, "")
+    .trim();
+}
+
+function mergeInstalledCatalog() {
+  const merged = new Map(state.nativeUnits);
+  const unusedNative = new Set(state.nativeUnits.keys());
+
+  state.installedRecords.forEach((record) => {
+    const displayKey = comparisonKey(record.title);
+    const basename =
+      record.name.split("/").filter(Boolean).at(-1) || record.name;
+    const internalKey = comparisonKey(basename);
+    let match = null;
+
+    for (const nativeKey of unusedNative) {
+      const native = state.nativeUnits.get(nativeKey);
+      const nativeTitle = comparisonKey(native.title);
+      const nativeIdentity = comparisonKey(
+        `${native.key} ${native.element.id || ""}`,
+      );
+      if (
+        (displayKey && nativeTitle === displayKey) ||
+        (internalKey.length >= 4 &&
+          (nativeTitle.includes(internalKey) ||
+            internalKey.includes(nativeTitle) ||
+            nativeIdentity.includes(internalKey)))
+      ) {
+        match = native;
+        break;
+      }
+    }
+
+    if (match) {
+      unusedNative.delete(match.key);
+      Object.assign(match, {
+        manifestName: record.name,
+        originalIndex: record.originalIndex,
+        hasSettings: true,
+      });
+      return;
+    }
+
+    const key = `installed-${slugify(record.name)}`;
+    if (!merged.has(key)) {
+      merged.set(key, {
+        key,
+        title: record.title,
+        element: null,
+        iconClasses: [],
+        column: null,
+        manifestName: record.name,
+        originalIndex: record.originalIndex,
+        hasSettings: false,
+      });
+    }
+  });
+
+  let fallbackIndex = state.installedRecords.length;
+  merged.forEach((unit) => {
+    if (!Number.isFinite(unit.originalIndex)) {
+      unit.originalIndex = fallbackIndex++;
+    }
+    unit.hasSettings = Boolean(unit.element);
+  });
+  state.units = merged;
+}
+
 function scanNativeUnits() {
   const next = new Map();
 
@@ -189,11 +274,66 @@ function scanNativeUnits() {
         element,
         iconClasses: extractIconClasses(element),
         column,
+        originalIndex: Number.POSITIVE_INFINITY,
+        hasSettings: true,
       });
     });
   });
 
-  state.units = next;
+  state.nativeUnits = next;
+  mergeInstalledCatalog();
+}
+
+async function loadInstalledCatalog() {
+  try {
+    const discoveryResponse = await fetch("/api/extensions/discover", {
+      cache: "no-store",
+    });
+    if (!discoveryResponse.ok) {
+      throw new Error(
+        `extension discovery failed: ${discoveryResponse.status}`,
+      );
+    }
+    const discovered = await discoveryResponse.json();
+    const names = Array.isArray(discovered)
+      ? discovered
+          .map((item) => (typeof item === "string" ? item : item?.name))
+          .filter((name) => typeof name === "string" && name)
+      : [];
+    const records = await Promise.all(
+      names.map(async (name, originalIndex) => {
+        let manifest = null;
+        try {
+          const response = await fetch(
+            `/scripts/extensions/${name}/manifest.json`,
+            { cache: "no-store" },
+          );
+          if (response.ok) manifest = await response.json();
+        } catch (error) {
+          console.debug(
+            `[simple extension] manifest read skipped: ${name}`,
+            error,
+          );
+        }
+        const basename = name.split("/").filter(Boolean).at(-1) || name;
+        return {
+          name,
+          originalIndex,
+          title: normalizeTitle(manifest?.display_name || basename),
+        };
+      }),
+    );
+    state.installedRecords = records;
+  } catch (error) {
+    console.warn(
+      "[simple extension] installed extension catalog unavailable; using visible settings only",
+      error,
+    );
+  } finally {
+    state.installedReady = true;
+    scanNativeUnits();
+    render();
+  }
 }
 
 function makeIcon(unit) {
@@ -432,6 +572,61 @@ function createSectionTitle(text, actionText, action) {
   return line;
 }
 
+function createSortControl() {
+  const label = document.createElement("label");
+  label.className = "se-sort";
+  const text = document.createElement("span");
+  text.textContent = "정렬";
+  const select = document.createElement("select");
+  select.setAttribute("aria-label", "확장 정렬 기준");
+  Object.entries(SORT_LABELS).forEach(([value, name]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = name;
+    select.append(option);
+  });
+  select.value = state.settings.sort || "name-asc";
+  select.addEventListener("change", () => {
+    state.settings.sort = select.value;
+    saveSettings();
+    render();
+  });
+  label.append(text, select);
+  return label;
+}
+
+function sortUnits(units) {
+  const list = [...units];
+  const byName = (a, b) => a.title.localeCompare(b.title, "ko");
+  switch (state.settings.sort) {
+    case "name-desc":
+      return list.sort((a, b) => byName(b, a));
+    case "original":
+      return list.sort(
+        (a, b) => a.originalIndex - b.originalIndex || byName(a, b),
+      );
+    case "folder": {
+      const folderOrder = new Map(
+        state.settings.folders.map((folder, index) => [folder.id, index]),
+      );
+      return list.sort((a, b) => {
+        const aFolder = state.settings.assignments[a.key];
+        const bFolder = state.settings.assignments[b.key];
+        const aOrder = folderOrder.has(aFolder)
+          ? folderOrder.get(aFolder)
+          : Number.MAX_SAFE_INTEGER;
+        const bOrder = folderOrder.has(bFolder)
+          ? folderOrder.get(bFolder)
+          : Number.MAX_SAFE_INTEGER;
+        return aOrder - bOrder || byName(a, b);
+      });
+    }
+    case "name-asc":
+    default:
+      return list.sort(byName);
+  }
+}
+
 function addFolder() {
   const name = normalizeTitle(
     window.prompt("새 폴더 이름을 입력해 주세요.", "새 폴더"),
@@ -460,12 +655,14 @@ function render() {
 
   const all = document.createElement("div");
   all.className = "se-all-extensions";
-  all.append(createSectionTitle("전체 확장", "정렬: 이름"));
+  const allTitle = createSectionTitle("전체 확장");
+  allTitle.append(createSortControl());
+  all.append(allTitle);
   const list = document.createElement("div");
   list.className = "se-extension-list";
-  [...state.units.values()]
-    .sort((a, b) => a.title.localeCompare(b.title, "ko"))
-    .forEach((unit) => list.append(makeExtensionRow(unit)));
+  sortUnits(state.units.values()).forEach((unit) =>
+    list.append(makeExtensionRow(unit)),
+  );
   if (!state.units.size) {
     const empty = document.createElement("div");
     empty.className = "se-empty";
@@ -504,11 +701,12 @@ function applySearch(value) {
 
 function setOnlyActiveNative(key) {
   state.units.forEach((unit, unitKey) => {
-    unit.element.classList.toggle("se-active-native", unitKey === key);
+    unit.element?.classList.toggle("se-active-native", unitKey === key);
   });
 }
 
 function ensureNativeExpanded(unit) {
+  if (!unit.element) return;
   const drawer = unit.element.querySelector(".inline-drawer-content");
   const toggle = unit.element.querySelector(".inline-drawer-toggle");
   if (!drawer || !toggle) return;
@@ -564,7 +762,14 @@ function toggleNativeSettings(key, row) {
   slot.className = "se-settings-slot";
   slot.dataset.key = key;
   slot.append(createMoveBar(unit));
-  state.nativeColumns.forEach((column) => slot.append(column));
+  if (unit.element) {
+    state.nativeColumns.forEach((column) => slot.append(column));
+  } else {
+    const empty = document.createElement("div");
+    empty.className = "se-empty se-no-settings";
+    empty.textContent = "이 확장은 별도로 표시할 설정 화면이 없어요.";
+    slot.append(empty);
+  }
   row.insertAdjacentElement("afterend", slot);
   setOnlyActiveNative(key);
   state.activeKey = key;
@@ -577,7 +782,7 @@ function closeNativeSettings() {
   if (!state.parking) return;
   state.nativeColumns.forEach((column) => state.parking.append(column));
   state.units.forEach((unit) =>
-    unit.element.classList.remove("se-active-native"),
+    unit.element?.classList.remove("se-active-native"),
   );
   state.root
     ?.querySelectorAll(".se-settings-slot")
@@ -655,6 +860,7 @@ function initialize() {
   );
   scanNativeUnits();
   render();
+  void loadInstalledCatalog();
 
   state.observer = new MutationObserver(syncSoon);
   state.nativeColumns.forEach((column) =>

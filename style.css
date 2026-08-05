@@ -50,7 +50,7 @@
 #rm_extensions_block .se-native-topbar {
   position: relative;
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
   align-items: center !important;
   gap: 8px !important;
   width: 100%;
@@ -61,7 +61,7 @@
 }
 
 #rm_extensions_block .se-native-topbar h3 {
-  grid-column: 1;
+  grid-column: 1 / 3;
   grid-row: 1;
   color: var(--se-text);
   font-size: 1.18rem;
@@ -79,24 +79,36 @@
 }
 
 #rm_extensions_block .se-native-topbar .checkbox_label {
-  grid-column: 1 / 3;
+  grid-column: 1;
   grid-row: 2;
-  justify-content: flex-start;
-  padding: 7px 10px;
+  justify-content: center;
+  min-width: 0;
+  padding: 6px 7px;
+  text-align: center;
+  font-size: 0.76rem;
 }
 
 #rm_extensions_block .se-native-topbar #extensions_details {
-  grid-column: 1;
-  grid-row: 3;
+  grid-column: 2;
+  grid-row: 2;
 }
 
 #rm_extensions_block .se-native-topbar #third_party_extension_button {
-  grid-column: 2;
-  grid-row: 3;
+  grid-column: 3;
+  grid-row: 2;
 }
 
 #rm_extensions_block .se-native-topbar input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin: 0 4px 0 0 !important;
   accent-color: var(--se-accent);
+}
+
+#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) span {
+  min-width: 0;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
 }
 
 #simple-extension-ui {
@@ -112,6 +124,10 @@
 #simple-extension-ui *::before,
 #simple-extension-ui *::after {
   box-sizing: border-box;
+}
+
+#simple-extension-ui [hidden] {
+  display: none !important;
 }
 
 .se-section-title h4 {
@@ -144,7 +160,7 @@
 }
 
 #rm_extensions_block .se-native-palette {
-  grid-column: 2;
+  grid-column: 3;
   grid-row: 1;
 }
 
@@ -282,6 +298,25 @@
   color: var(--se-muted);
   background: var(--se-surface);
   font-size: 0.76rem;
+}
+
+.se-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--se-muted);
+  font-size: 0.76rem;
+}
+
+.se-sort select {
+  width: auto;
+  min-width: 98px;
+  height: 32px;
+  padding: 0 28px 0 9px;
+  border: 1px solid var(--se-border);
+  border-radius: 8px;
+  color: var(--se-text);
+  background: var(--se-surface);
 }
 
 .se-folder {
@@ -497,36 +532,40 @@
 
 @media (max-width: 700px) {
   #rm_extensions_block .se-native-topbar {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
     padding: 9px !important;
   }
 
   #rm_extensions_block .se-native-topbar h3 {
-    grid-column: 1;
+    grid-column: 1 / 3;
     grid-row: 1;
   }
 
   #rm_extensions_block .se-native-topbar .checkbox_label {
-    grid-column: 1 / 3;
+    grid-column: 1;
     grid-row: 2;
   }
 
   #rm_extensions_block .se-native-topbar #extensions_details {
-    grid-column: 1;
-    grid-row: 3;
+    grid-column: 2;
+    grid-row: 2;
   }
 
   #rm_extensions_block .se-native-topbar #third_party_extension_button {
-    grid-column: 2;
-    grid-row: 3;
+    grid-column: 3;
+    grid-row: 2;
   }
 
   #rm_extensions_block .se-native-topbar .menu_button {
     width: 100%;
     min-width: 0;
     padding: 7px 8px;
-    white-space: nowrap;
-    font-size: 0.78rem;
+    white-space: normal;
+    font-size: 0.72rem;
+  }
+
+  #rm_extensions_block .se-native-topbar .checkbox_label {
+    font-size: 0.69rem;
   }
 
   #simple-extension-ui {
