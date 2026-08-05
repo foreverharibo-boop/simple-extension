@@ -119,7 +119,7 @@ function slugify(text) {
   );
 }
 
-function extractTitle(element) {
+function findTitleElement(element) {
   const selectors = [
     ":scope > .inline-drawer > .inline-drawer-toggle b",
     ":scope > .inline-drawer > .inline-drawer-toggle strong",
@@ -135,6 +135,12 @@ function extractTitle(element) {
     ":scope > h4",
     ":scope > strong",
     ":scope > b",
+    ":scope > * > h3",
+    ":scope > * > h4",
+    ":scope > * > strong",
+    ":scope > * > b",
+    '[class*="title" i]',
+    '[class*="name" i]',
   ];
 
   for (const selector of selectors) {
@@ -143,11 +149,19 @@ function extractTitle(element) {
         ? element
         : element.querySelector(selector);
       const title = normalizeTitle(match?.textContent);
-      if (title) return title;
+      if (title) return match;
     } catch {
       // Older Android WebViews may not support every :scope selector.
     }
   }
+
+  return null;
+}
+
+function extractTitle(element) {
+  const titleElement = findTitleElement(element);
+  const title = normalizeTitle(titleElement?.textContent);
+  if (title) return title;
 
   const labelled =
     element.getAttribute("aria-label") || element.getAttribute("title");
@@ -416,6 +430,42 @@ function findPrimaryToggle(element) {
   return null;
 }
 
+function findCommonAncestor(left, right, root) {
+  if (!left || !right) return null;
+  const leftAncestors = new Set();
+  let current = left;
+  while (current) {
+    leftAncestors.add(current);
+    if (current === root) break;
+    current = current.parentElement;
+  }
+
+  current = right;
+  while (current) {
+    if (leftAncestors.has(current)) return current;
+    if (current === root) break;
+    current = current.parentElement;
+  }
+  return null;
+}
+
+function findPillHeader(unit, toggle) {
+  const titleElement = unit.titleElement?.isConnected
+    ? unit.titleElement
+    : findTitleElement(unit.element);
+  unit.titleElement = titleElement;
+  const common = findCommonAncestor(titleElement, toggle, unit.element);
+  const content = findPrimaryContent(unit);
+  if (
+    common &&
+    common !== unit.element &&
+    (!content || !common.contains(content))
+  ) {
+    return common;
+  }
+  return toggle;
+}
+
 function findPrimaryContent(unit) {
   if (unit.primaryContent?.isConnected) return unit.primaryContent;
   const header = unit.primaryToggle?.isConnected
@@ -488,6 +538,23 @@ function prepareNativeUnit(unit) {
   unit.primaryToggle = header;
   unit.primaryContent = null;
   header?.classList.add("se-native-primary-toggle");
+  const pillHeader = header ? findPillHeader(unit, header) : null;
+  unit.pillHeader = pillHeader;
+  pillHeader?.classList.add("se-native-pill-header");
+
+  if (
+    pillHeader &&
+    pillHeader !== header &&
+    !pillHeader.dataset.sePillListener
+  ) {
+    pillHeader.dataset.sePillListener = "true";
+    pillHeader.addEventListener("click", (event) => {
+      if (header.contains(event.target)) return;
+      if (event.target.closest("button, input, select, textarea, a, label"))
+        return;
+      header.click();
+    });
+  }
   if (header && !header.dataset.seNativeListener) {
     header.dataset.seNativeListener = "true";
     header.addEventListener("click", () => {
