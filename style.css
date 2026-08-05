@@ -532,10 +532,15 @@
 }
 
 .se-native-unit {
+  width: 100% !important;
+  max-width: 100% !important;
   min-width: 0;
+  max-height: none !important;
   margin: 0 !important;
   padding: 0 !important;
+  overflow: visible !important;
   color: var(--se-text);
+  box-sizing: border-box;
 }
 
 .se-native-unit[hidden] {
@@ -544,6 +549,14 @@
 
 .se-native-unit.se-native-unit--open {
   grid-column: 1 / -1;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+
+.se-native-unit > * {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .se-native-unit > .inline-drawer,
@@ -553,8 +566,11 @@
 }
 
 .se-native-unit .inline-drawer-toggle.inline-drawer-header,
-.se-native-unit > .inline-drawer-toggle {
+.se-native-unit > .inline-drawer-toggle,
+.se-native-unit .se-native-primary-toggle {
   display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
   min-height: 34px;
   align-items: center;
   gap: 6px;
@@ -569,7 +585,8 @@
 }
 
 .se-native-unit .inline-drawer-toggle.inline-drawer-header::after,
-.se-native-unit > .inline-drawer-toggle::after {
+.se-native-unit > .inline-drawer-toggle::after,
+.se-native-unit .se-native-primary-toggle::after {
   content: "⋮" !important;
   display: grid;
   width: 25px;
@@ -584,14 +601,17 @@
   line-height: 1;
 }
 
-.se-native-unit .inline-drawer-toggle .inline-drawer-icon {
+.se-native-unit .se-native-primary-toggle .inline-drawer-icon {
   display: none !important;
 }
 
 .se-native-unit .inline-drawer-content {
-  max-width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: none !important;
   margin: 4px 0 7px !important;
   padding: 9px !important;
+  overflow: visible !important;
   border: 1px solid var(--se-border);
   border-radius: 9px;
   color: var(--se-text);
@@ -726,18 +746,21 @@
 
 @media (max-width: 700px) {
   #rm_extensions_block .se-native-topbar {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
-    gap: 3px !important;
+    grid-template-columns:
+      max-content max-content max-content minmax(0, 1fr)
+      auto;
+    justify-content: start !important;
+    gap: 4px !important;
     padding: 7px !important;
   }
 
   #rm_extensions_block .se-native-topbar h3 {
-    grid-column: 1 / 3;
+    grid-column: 1 / 5;
     grid-row: 1;
   }
 
   #rm_extensions_block .se-native-palette {
-    grid-column: 3;
+    grid-column: 5;
     grid-row: 1;
   }
 
@@ -758,7 +781,8 @@
 
   #rm_extensions_block .se-native-topbar .checkbox_label,
   #rm_extensions_block .se-native-topbar .menu_button {
-    width: 100%;
+    width: max-content !important;
+    max-width: max-content !important;
     min-width: 0;
     min-height: 29px;
     height: 29px;
@@ -767,6 +791,7 @@
     overflow: hidden;
     border-radius: 7px !important;
     justify-content: flex-start !important;
+    justify-self: start !important;
     text-align: left !important;
     white-space: nowrap;
     font-size: 9px !important;

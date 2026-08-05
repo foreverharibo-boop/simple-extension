@@ -398,15 +398,50 @@ function makeMoreButton(label) {
   return button;
 }
 
+function findPrimaryToggle(element) {
+  const selectors = [
+    ":scope > .inline-drawer > .inline-drawer-toggle",
+    ":scope > .inline-drawer-toggle",
+    ".inline-drawer-toggle",
+    ".inline-drawer-header",
+  ];
+  for (const selector of selectors) {
+    try {
+      const match = element.querySelector(selector);
+      if (match) return match;
+    } catch {
+      // Ignore unsupported :scope selectors on older Android WebViews.
+    }
+  }
+  return null;
+}
+
+function findPrimaryContent(unit) {
+  if (unit.primaryContent?.isConnected) return unit.primaryContent;
+  const header = unit.primaryToggle?.isConnected
+    ? unit.primaryToggle
+    : findPrimaryToggle(unit.element);
+  const drawer = header?.closest(".inline-drawer");
+  let content = null;
+  try {
+    content = drawer?.querySelector(":scope > .inline-drawer-content");
+  } catch {
+    // Fall through to the broad native selector.
+  }
+  unit.primaryContent =
+    content || unit.element.querySelector(".inline-drawer-content");
+  return unit.primaryContent;
+}
+
 function updateNativeOpenState(unit) {
-  const content = unit.element.querySelector(".inline-drawer-content");
+  const content = findPrimaryContent(unit);
   if (!content) return;
   const isOpen = getComputedStyle(content).display !== "none";
   unit.element.classList.toggle("se-native-unit--open", isOpen);
 }
 
 function ensureNativeMoveBar(unit) {
-  const content = unit.element.querySelector(".inline-drawer-content");
+  const content = findPrimaryContent(unit);
   if (!content) return;
 
   let bar = content.querySelector(":scope > .se-native-movebar");
@@ -449,13 +484,15 @@ function prepareNativeUnit(unit) {
   element.dataset.search = unit.title.toLocaleLowerCase();
   element.classList.add("se-native-unit");
 
-  const header = element.querySelector(
-    ":scope > .inline-drawer > .inline-drawer-toggle, :scope > .inline-drawer-toggle, .inline-drawer-header",
-  );
+  const header = findPrimaryToggle(element);
+  unit.primaryToggle = header;
+  unit.primaryContent = null;
+  header?.classList.add("se-native-primary-toggle");
   if (header && !header.dataset.seNativeListener) {
     header.dataset.seNativeListener = "true";
     header.addEventListener("click", () => {
       requestAnimationFrame(() => updateNativeOpenState(unit));
+      window.setTimeout(() => updateNativeOpenState(unit), 250);
     });
   }
 
