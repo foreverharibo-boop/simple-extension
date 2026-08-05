@@ -40,9 +40,13 @@ const state = {
   nativeColumns: [],
   nativeUnits: new Map(),
   observer: null,
+  layoutObserver: null,
   syncTimer: null,
+  normalizeTimer: null,
+  normalizeInterval: null,
   originalIndex: 0,
   rendering: false,
+  normalizing: false,
 };
 
 function clone(value) {
@@ -431,6 +435,17 @@ function findPrimaryToggle(element) {
   return null;
 }
 
+function directChild(element, selector) {
+  return [...(element?.children || [])].find((child) =>
+    child.matches(selector),
+  );
+}
+
+function drawerTitle(toggle, fallback = "설정") {
+  const named = toggle?.querySelector("b, strong, .extension-title");
+  return normalizeTitle(named?.textContent || toggle?.textContent) || fallback;
+}
+
 function findCommonAncestor(left, right, root) {
   if (!left || !right) return null;
   const leftAncestors = new Set();
@@ -484,6 +499,14 @@ function findPrimaryContent(unit) {
   return unit.primaryContent;
 }
 
+function updateDrawerOpenState(toggle, content, fixed) {
+  if (!content || !fixed) return;
+  const isOpen = getComputedStyle(content).display !== "none";
+  fixed.classList.toggle("is-open", isOpen);
+  fixed.setAttribute("aria-expanded", String(isOpen));
+  toggle?.setAttribute("aria-expanded", String(isOpen));
+}
+
 function updateNativeOpenState(unit) {
   const content = findPrimaryContent(unit);
   if (!content) return;
@@ -504,6 +527,35 @@ function markNativeContentShell(unit) {
   }
 }
 
+function markFixedContent(unit, content) {
+  if (!content) return;
+  content.classList.add("se-native-fixed-content");
+  let shell = content.parentElement;
+  while (shell && shell !== unit.element) {
+    shell.classList.add("se-native-content-shell");
+    shell = shell.parentElement;
+  }
+}
+
+function setFixedHeaderContents(fixed, title) {
+  let name = fixed.querySelector(":scope > .se-fixed-extension-name");
+  if (!name) {
+    name = document.createElement("span");
+    name.className = "se-fixed-extension-name";
+    fixed.append(name);
+  }
+  if (name.textContent !== title) name.textContent = title;
+
+  let more = fixed.querySelector(":scope > .se-fixed-extension-more");
+  if (!more) {
+    more = document.createElement("span");
+    more.className = "se-fixed-extension-more";
+    more.textContent = "⋮";
+    more.setAttribute("aria-hidden", "true");
+    fixed.append(more);
+  }
+}
+
 function ensureFixedHeader(unit, originalToggle, originalHeader) {
   let fixed = unit.element.querySelector(":scope > .se-fixed-extension-header");
   if (!fixed) {
@@ -518,15 +570,7 @@ function ensureFixedHeader(unit, originalToggle, originalHeader) {
     });
   }
 
-  fixed.replaceChildren();
-  const name = document.createElement("span");
-  name.className = "se-fixed-extension-name";
-  name.textContent = unit.title;
-  const more = document.createElement("span");
-  more.className = "se-fixed-extension-more";
-  more.textContent = "⋮";
-  more.setAttribute("aria-hidden", "true");
-  fixed.append(name, more);
+  setFixedHeaderContents(fixed, unit.title);
   fixed.setAttribute("aria-label", `${unit.title} 설정 열기`);
   unit.fixedHeader = fixed;
 
@@ -539,6 +583,126 @@ function ensureFixedHeader(unit, originalToggle, originalHeader) {
   ) {
     unit.titleElement.classList.add("se-native-original-title");
   }
+}
+
+function ensureSubdrawerHeader(unit, drawer, toggle, content, index) {
+  if (!drawer.dataset.seDrawerId) {
+    drawer.dataset.seDrawerId = `${unit.key}-drawer-${index}`;
+  }
+  const drawerId = drawer.dataset.seDrawerId;
+  let fixed = [
+    ...unit.element.querySelectorAll(".se-fixed-subdrawer-header"),
+  ].find((candidate) => candidate.dataset.seDrawerFor === drawerId);
+  if (!fixed) {
+    fixed = document.createElement("button");
+    fixed.type = "button";
+    fixed.className =
+      "se-fixed-extension-header se-fixed-subdrawer-header se-ignore-native";
+    fixed.dataset.seDrawerFor = drawerId;
+    drawer.before(fixed);
+    fixed.addEventListener("click", () => {
+      toggle.click();
+      requestAnimationFrame(() =>
+        updateDrawerOpenState(toggle, content, fixed),
+      );
+      window.setTimeout(
+        () => updateDrawerOpenState(toggle, content, fixed),
+        250,
+      );
+    });
+  }
+
+  const title = drawerTitle(toggle);
+  setFixedHeaderContents(fixed, title);
+  fixed.setAttribute("aria-label", `${title} 설정 열기`);
+  toggle.classList.add("se-native-original-toggle");
+  drawer.classList.add("se-native-fixed-drawer");
+  markFixedContent(unit, content);
+  updateDrawerOpenState(toggle, content, fixed);
+  return fixed;
+}
+
+function collectNativeDrawers(unit) {
+  return [...unit.element.querySelectorAll(".inline-drawer")]
+    .filter(
+      (drawer) =>
+        !drawer.closest(".se-fixed-extension-header, .se-native-movebar"),
+    )
+    .map((drawer) => ({
+      drawer,
+      toggle: directChild(
+        drawer,
+        ".inline-drawer-toggle, .inline-drawer-header",
+      ),
+      content: directChild(drawer, ".inline-drawer-content"),
+    }))
+    .filter(({ toggle, content }) => toggle && content);
+}
+
+function normalizeNativeDrawers(unit) {
+  const pairs = collectNativeDrawers(unit);
+  const primaryContent = findPrimaryContent(unit);
+  const primaryPair = pairs.find(
+    ({ toggle, content }) =>
+      toggle === unit.primaryToggle || content === primaryContent,
+  );
+
+  pairs.forEach(({ drawer, toggle, content }, index) => {
+    markFixedContent(unit, content);
+    if (primaryPair && drawer === primaryPair.drawer) {
+      toggle.classList.add("se-native-original-toggle");
+      return;
+    }
+    ensureSubdrawerHeader(unit, drawer, toggle, content, index);
+  });
+
+  // Some extensions build a title row and arrow separately, or insert it later.
+  // Every original toggle is hidden after its native click target has been mapped.
+  unit.element
+    .querySelectorAll(".inline-drawer-toggle, .inline-drawer-header")
+    .forEach((toggle) => {
+      if (toggle.closest(".se-fixed-extension-header, .se-native-movebar"))
+        return;
+      toggle.classList.add("se-native-original-toggle");
+      const splitHeader = toggle.parentElement;
+      if (
+        splitHeader &&
+        splitHeader !== unit.element &&
+        !splitHeader.querySelector(".inline-drawer-content")
+      ) {
+        splitHeader.classList.add("se-native-original-header");
+      }
+      const icon = toggle.querySelector(
+        ".inline-drawer-icon, .fa-circle-chevron-down, .fa-circle-chevron-up",
+      );
+      icon?.classList.add("se-native-original-toggle");
+    });
+}
+
+function normalizeAllNativeUnits() {
+  if (state.normalizing || state.rendering) return;
+  state.normalizing = true;
+  try {
+    state.nativeUnits.forEach((unit) => {
+      if (!state.ui?.contains(unit.element)) return;
+      const header = findPrimaryToggle(unit.element);
+      unit.primaryToggle = header;
+      unit.primaryContent = null;
+      header?.classList.add("se-native-primary-toggle");
+      const pillHeader = header ? findPillHeader(unit, header) : null;
+      ensureFixedHeader(unit, header, pillHeader);
+      markNativeContentShell(unit);
+      normalizeNativeDrawers(unit);
+      updateNativeOpenState(unit);
+    });
+  } finally {
+    state.normalizing = false;
+  }
+}
+
+function normalizeSoon() {
+  window.clearTimeout(state.normalizeTimer);
+  state.normalizeTimer = window.setTimeout(normalizeAllNativeUnits, 40);
 }
 
 function ensureNativeMoveBar(unit) {
@@ -593,6 +757,7 @@ function prepareNativeUnit(unit) {
   unit.pillHeader = pillHeader;
   ensureFixedHeader(unit, header, pillHeader);
   markNativeContentShell(unit);
+  normalizeNativeDrawers(unit);
   if (header && !header.dataset.seNativeListener) {
     header.dataset.seNativeListener = "true";
     header.addEventListener("click", () => {
@@ -712,6 +877,7 @@ function render() {
 
   applyTheme();
   state.rendering = false;
+  normalizeSoon();
 }
 
 function applyTheme() {
@@ -806,6 +972,27 @@ function initialize() {
   state.observer = new MutationObserver(syncSoon);
   state.nativeColumns.forEach((column) =>
     state.observer.observe(column, { childList: true, subtree: true }),
+  );
+
+  state.layoutObserver = new MutationObserver((mutations) => {
+    const hasNativeChange = mutations.some((mutation) => {
+      if (
+        mutation.target.closest?.(
+          ".se-fixed-extension-header, .se-native-movebar, .se-theme-picker",
+        )
+      )
+        return false;
+      return [...mutation.addedNodes, ...mutation.removedNodes].some(
+        (node) =>
+          node.nodeType === 1 && !node.classList?.contains("se-ignore-native"),
+      );
+    });
+    if (hasNativeChange) normalizeSoon();
+  });
+  state.layoutObserver.observe(state.ui, { childList: true, subtree: true });
+  state.normalizeInterval = globalThis.setInterval(
+    normalizeAllNativeUnits,
+    500,
   );
 
   document.addEventListener("click", (event) => {
