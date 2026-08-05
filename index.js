@@ -148,6 +148,7 @@ function findTitleElement(element) {
       const match = element.matches(selector)
         ? element
         : element.querySelector(selector);
+      if (match?.closest(".se-fixed-extension-header")) continue;
       const title = normalizeTitle(match?.textContent);
       if (title) return match;
     } catch {
@@ -488,6 +489,56 @@ function updateNativeOpenState(unit) {
   if (!content) return;
   const isOpen = getComputedStyle(content).display !== "none";
   unit.element.classList.toggle("se-native-unit--open", isOpen);
+  unit.fixedHeader?.classList.toggle("is-open", isOpen);
+  unit.fixedHeader?.setAttribute("aria-expanded", String(isOpen));
+}
+
+function markNativeContentShell(unit) {
+  const content = findPrimaryContent(unit);
+  if (!content) return;
+  content.classList.add("se-native-primary-content");
+  let shell = content.parentElement;
+  while (shell && shell !== unit.element) {
+    shell.classList.add("se-native-content-shell");
+    shell = shell.parentElement;
+  }
+}
+
+function ensureFixedHeader(unit, originalToggle, originalHeader) {
+  let fixed = unit.element.querySelector(":scope > .se-fixed-extension-header");
+  if (!fixed) {
+    fixed = document.createElement("button");
+    fixed.type = "button";
+    fixed.className = "se-fixed-extension-header se-ignore-native";
+    unit.element.prepend(fixed);
+    fixed.addEventListener("click", () => {
+      unit.primaryToggle?.click();
+      requestAnimationFrame(() => updateNativeOpenState(unit));
+      window.setTimeout(() => updateNativeOpenState(unit), 250);
+    });
+  }
+
+  fixed.replaceChildren();
+  const name = document.createElement("span");
+  name.className = "se-fixed-extension-name";
+  name.textContent = unit.title;
+  const more = document.createElement("span");
+  more.className = "se-fixed-extension-more";
+  more.textContent = "⋮";
+  more.setAttribute("aria-hidden", "true");
+  fixed.append(name, more);
+  fixed.setAttribute("aria-label", `${unit.title} 설정 열기`);
+  unit.fixedHeader = fixed;
+
+  originalHeader?.classList.add("se-native-original-header");
+  originalToggle?.classList.add("se-native-original-toggle");
+  if (
+    unit.titleElement &&
+    originalHeader &&
+    !originalHeader.contains(unit.titleElement)
+  ) {
+    unit.titleElement.classList.add("se-native-original-title");
+  }
 }
 
 function ensureNativeMoveBar(unit) {
@@ -540,21 +591,8 @@ function prepareNativeUnit(unit) {
   header?.classList.add("se-native-primary-toggle");
   const pillHeader = header ? findPillHeader(unit, header) : null;
   unit.pillHeader = pillHeader;
-  pillHeader?.classList.add("se-native-pill-header");
-
-  if (
-    pillHeader &&
-    pillHeader !== header &&
-    !pillHeader.dataset.sePillListener
-  ) {
-    pillHeader.dataset.sePillListener = "true";
-    pillHeader.addEventListener("click", (event) => {
-      if (header.contains(event.target)) return;
-      if (event.target.closest("button, input, select, textarea, a, label"))
-        return;
-      header.click();
-    });
-  }
+  ensureFixedHeader(unit, header, pillHeader);
+  markNativeContentShell(unit);
   if (header && !header.dataset.seNativeListener) {
     header.dataset.seNativeListener = "true";
     header.addEventListener("click", () => {

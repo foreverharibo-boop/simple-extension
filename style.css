@@ -565,6 +565,56 @@
   margin: 0 !important;
 }
 
+.se-fixed-extension-header {
+  appearance: none;
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  margin: 0 !important;
+  padding: 3px 7px 3px 10px !important;
+  overflow: hidden;
+  border: 1px solid var(--se-border) !important;
+  border-radius: 8px !important;
+  color: var(--se-text) !important;
+  background: var(--se-surface) !important;
+  box-shadow: none !important;
+  font: inherit;
+  font-size: 0.8rem !important;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.se-fixed-extension-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.se-fixed-extension-more {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  margin-left: auto;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--se-text);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.se-native-original-header,
+.se-native-original-title,
+.se-native-original-toggle:not(.se-native-original-header) {
+  display: none !important;
+}
+
 .se-native-unit .se-native-pill-header {
   display: flex !important;
   width: 100% !important;
@@ -629,6 +679,22 @@
   color: var(--se-text);
   background: var(--se-surface);
   box-shadow: var(--se-shadow);
+}
+
+.se-native-unit--open .se-native-content-shell,
+.se-native-unit--open .se-native-primary-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.se-native-unit--open .se-native-primary-content > * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .se-native-movebar {
