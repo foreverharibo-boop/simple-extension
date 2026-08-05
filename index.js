@@ -1,18 +1,21 @@
 const MODULE_NAME = "simple_extension";
 
 const DEFAULT_SETTINGS = Object.freeze({
+  settingsVersion: 3,
   theme: "minimal-white",
-  folders: [
-    { id: "favorites", name: "자주 쓰는 확장", icon: "✨" },
-    { id: "utility", name: "유틸리티", icon: "🧰" },
-    { id: "decor", name: "꾸미기", icon: "🎨" },
-    { id: "story", name: "스토리/메모리", icon: "📚" },
-    { id: "experimental", name: "실험적 확장", icon: "🧪" },
-  ],
+  folders: [],
   assignments: {},
-  openFolders: ["favorites"],
+  openFolders: [],
   sort: "name-asc",
 });
+
+const LEGACY_DEFAULT_FOLDER_IDS = Object.freeze([
+  "favorites",
+  "utility",
+  "decor",
+  "story",
+  "experimental",
+]);
 
 const THEME_LABELS = Object.freeze({
   "minimal-white": "미니멀 화이트",
@@ -62,17 +65,31 @@ function loadSettings() {
 
   const saved = context.extensionSettings[MODULE_NAME] ?? {};
   const defaults = clone(DEFAULT_SETTINGS);
+  const savedFolders = Array.isArray(saved.folders) ? saved.folders : null;
+  const hasAssignments = Boolean(
+    saved.assignments && Object.keys(saved.assignments).length,
+  );
+  const hasUntouchedLegacyFolders =
+    !saved.settingsVersion &&
+    !hasAssignments &&
+    savedFolders?.length === LEGACY_DEFAULT_FOLDER_IDS.length &&
+    LEGACY_DEFAULT_FOLDER_IDS.every(
+      (id, index) => savedFolders[index]?.id === id,
+    );
   state.settings = {
     ...defaults,
     ...saved,
-    folders: Array.isArray(saved.folders) ? saved.folders : defaults.folders,
+    settingsVersion: defaults.settingsVersion,
+    folders: hasUntouchedLegacyFolders ? [] : savedFolders || defaults.folders,
     assignments:
       saved.assignments && typeof saved.assignments === "object"
         ? saved.assignments
         : {},
-    openFolders: Array.isArray(saved.openFolders)
-      ? saved.openFolders
-      : defaults.openFolders,
+    openFolders: hasUntouchedLegacyFolders
+      ? []
+      : Array.isArray(saved.openFolders)
+        ? saved.openFolders
+        : defaults.openFolders,
   };
   context.extensionSettings[MODULE_NAME] = state.settings;
   return state.settings;
@@ -336,21 +353,6 @@ async function loadInstalledCatalog() {
   }
 }
 
-function makeIcon(unit) {
-  const box = document.createElement("span");
-  box.className = "se-extension-icon";
-  if (unit.iconClasses.length) {
-    const icon = document.createElement("i");
-    icon.classList.add(...unit.iconClasses);
-    box.append(icon);
-  } else {
-    const icon = document.createElement("i");
-    icon.className = "fa-solid fa-puzzle-piece";
-    box.append(icon);
-  }
-  return box;
-}
-
 function makeMoreButton(label) {
   const button = document.createElement("button");
   button.type = "button";
@@ -367,7 +369,6 @@ function makeExtensionRow(unit, compact = false) {
   row.dataset.key = unit.key;
   row.dataset.search = unit.title.toLocaleLowerCase();
 
-  row.append(makeIcon(unit));
   const name = document.createElement("span");
   name.className = "se-extension-name";
   name.textContent = unit.title;
