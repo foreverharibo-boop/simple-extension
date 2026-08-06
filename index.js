@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.37 debug report`];
+  const lines = [`[simple extension] v0.7.38 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -351,6 +351,17 @@ function buildDebugReport() {
     lines.push(
       `  ${unit.title} (${unit.key}): inline-drawer ${drawers.length}개 / 생성된 서브알약 ${subPills}개`,
     );
+    const mainPill = unit.fixedHeader;
+    const subPill = unit.element.querySelector(".se-fixed-subdrawer-header");
+    if (mainPill && subPill) {
+      const mainRect = mainPill.getBoundingClientRect();
+      const subRect = subPill.getBoundingClientRect();
+      const gap = Math.round(subRect.top - mainRect.bottom);
+      const sm = getComputedStyle(subPill);
+      lines.push(
+        `      본알약↔서브알약 실제간격 ${gap}px (서브 margin-top ${sm.marginTop}, margin-bottom ${sm.marginBottom})`,
+      );
+    }
     drawers.forEach((d) => {
       const label =
         normalizeTitle(
@@ -1750,7 +1761,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.37 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.38 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1772,7 +1783,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.37 debug dump`];
+  const lines = [`[simple extension] v0.7.38 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
