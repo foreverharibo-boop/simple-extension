@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.31 debug report`];
+  const lines = [`[simple extension] v0.7.32 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -837,13 +837,24 @@ function updateNativeOpenState(unit) {
   unit.element.classList.toggle("se-native-unit--open", isOpen);
   unit.fixedHeader?.classList.toggle("is-open", isOpen);
   unit.fixedHeader?.setAttribute("aria-expanded", String(isOpen));
+  // 서브알약을 가진 유닛(예: "이미지 생성 ?"의 "이미지 프롬프트 템플릿")은
+  // 유닛 안에 알약이 하나 더 쌓여 세로로 길어진다. 이 유닛이 2열 그리드의
+  // 한 칸만 차지하면 옆칸이 빈 채로 남으므로, 짝을 전체폭으로 펼쳐서
+  // 서브알약이 그 아래로 자연스럽게 쌓이게 한다.
+  const hasSubPill = Boolean(
+    unit.element.querySelector(".se-fixed-subdrawer-header"),
+  );
   const pair = unit.element.closest(".se-row-pair");
   if (pair) {
     const anyOpen = [...pair.children].some((child) =>
       child.classList.contains("se-native-unit--open"),
     );
-    pair.classList.toggle("se-row-pair--open", anyOpen);
+    const anySubPill = [...pair.children].some((child) =>
+      child.querySelector?.(".se-fixed-subdrawer-header"),
+    );
+    pair.classList.toggle("se-row-pair--open", anyOpen || anySubPill);
   }
+  unit.element.classList.toggle("se-native-unit--has-subpill", hasSubPill);
 }
 
 function markNativeContentShell(unit) {
@@ -1794,7 +1805,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.31 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.32 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1816,7 +1827,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.31 debug dump`];
+  const lines = [`[simple extension] v0.7.32 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

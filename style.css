@@ -381,11 +381,11 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 5px 6px 5px 9px;
+  gap: 6px;
+  min-height: 26px;
+  padding: 3px 5px 3px 7px;
   border: 1px solid var(--se-border);
-  border-radius: 9px;
+  border-radius: 8px;
   color: var(--se-text);
   background: var(--se-surface);
 }
@@ -414,13 +414,13 @@
 
 .se-folder-icon {
   display: grid;
-  width: 24px;
-  height: 24px;
+  width: 19px;
+  height: 19px;
   place-items: center;
-  border-radius: 7px;
+  border-radius: 6px;
   color: var(--se-accent);
   background: var(--se-accent-soft);
-  font-size: 0.78rem;
+  font-size: 0.66rem;
 }
 
 .se-folder-name {
@@ -428,7 +428,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .se-extension-name {
@@ -442,14 +442,14 @@
 
 .se-count {
   display: grid;
-  min-width: 22px;
-  height: 22px;
+  min-width: 18px;
+  height: 18px;
   place-items: center;
   border: 1px solid var(--se-border);
   border-radius: 999px;
   color: var(--se-muted);
   background: var(--se-surface-2);
-  font-size: 0.7rem;
+  font-size: 0.64rem;
 }
 
 .se-more {
@@ -613,7 +613,7 @@
 }
 
 .se-fixed-subdrawer-header {
-  margin: 4px 0 !important;
+  margin: 4px 0 0 !important;
 }
 
 /* 서브 드로어(중첩 .inline-drawer)와 그 서브알약 헤더는 유닛이 접혀 있어도
@@ -1007,7 +1007,7 @@
     width: min(310px, calc(100% - 18px));
   }
   .se-folder-row {
-    min-height: 34px;
+    min-height: 28px;
   }
   .se-settings-bar {
     align-items: stretch;
