@@ -530,25 +530,24 @@
 }
 
 .se-row-pair {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
   gap: 4px 7px;
 }
 
 .se-row-pair > .se-native-unit {
-  flex: 0 1 calc(50% - 3.5px);
   min-width: 0;
+  max-width: 100%;
 }
 
 /* 짝 안에서 하나라도 펼쳐지면 그 짝만 세로로 쌓는다. 왼쪽/오른쪽 상관없이
    항상 "제자리에서" 펼쳐지는 것처럼 보이고, 다른 짝에는 전혀 영향 없다. */
 .se-row-pair--open {
-  flex-direction: column;
+  grid-template-columns: 1fr;
 }
 
 .se-row-pair--open > .se-native-unit {
-  flex: 1 1 auto;
   width: 100%;
 }
 
@@ -980,10 +979,9 @@
     width: 100%;
   }
   .se-row-pair {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
   .se-row-pair > .se-native-unit {
-    flex: 1 1 auto;
     width: 100%;
   }
   .se-theme-picker {
