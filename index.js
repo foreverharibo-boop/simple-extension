@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.18 debug report`];
+  const lines = [`[simple extension] v0.7.19 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -753,9 +753,17 @@ function enforceContentBox(unit) {
 
 function updateNativeOpenState(unit) {
   const content = findPrimaryContent(unit);
-  const isOpen = content
-    ? getComputedStyle(content).display !== "none"
-    : unit.element.dataset.seSelfOpen === "true";
+  let isOpen;
+  if (content) {
+    // display:none이 끝내 안 걸리는 경우(jQuery 슬라이드 애니메이션과 강제
+    // 인라인 스타일 충돌 등)를 대비해, display 값뿐 아니라 실제 렌더링
+    // 높이도 함께 확인한다. 둘 다 "열림"을 가리켜야 열린 것으로 본다.
+    const displayOpen = getComputedStyle(content).display !== "none";
+    const hasHeight = content.getBoundingClientRect().height > 2;
+    isOpen = displayOpen && hasHeight;
+  } else {
+    isOpen = unit.element.dataset.seSelfOpen === "true";
+  }
   unit.element.classList.toggle("se-native-unit--open", isOpen);
   unit.fixedHeader?.classList.toggle("is-open", isOpen);
   unit.fixedHeader?.setAttribute("aria-expanded", String(isOpen));
@@ -1645,7 +1653,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.18 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.19 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1667,7 +1675,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.18 debug dump`];
+  const lines = [`[simple extension] v0.7.19 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
