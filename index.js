@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.8 debug report`];
+  const lines = [`[simple extension] v0.7.9 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -419,7 +419,7 @@ function createToolbar() {
   debug.className = "se-text-button se-debug-open";
   debug.title = "디버그 리포트";
   debug.setAttribute("aria-label", "디버그 리포트");
-  debug.textContent = "🐞";
+  debug.textContent = "⚠️";
   debug.addEventListener("click", showDebugModal);
   toolbar.append(search, debug);
   return toolbar;
@@ -681,10 +681,15 @@ function enforceContentBox(unit) {
   const content = findPrimaryContent(unit);
   if (!content) return;
   const style = content.style;
+  // display:none 대신 max-height:0 등으로 접는 확장은 접힌 상태에서도
+  // 마진이 렌더링돼 알약 간격이 벌어진다. 접혀 있으면 마진을 0으로.
+  const collapsed =
+    getComputedStyle(content).display === "none" ||
+    content.getBoundingClientRect().height < 3;
   style.setProperty("width", "calc(100% - 16px)", "important");
   style.setProperty("max-width", "calc(100% - 16px)", "important");
-  style.setProperty("margin", "4px 8px 7px", "important");
-  style.setProperty("padding", "9px", "important");
+  style.setProperty("margin", collapsed ? "0 8px" : "4px 8px 7px", "important");
+  style.setProperty("padding", collapsed ? "0" : "9px", "important");
   style.setProperty("box-sizing", "border-box", "important");
 }
 
@@ -1445,7 +1450,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.8 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.9 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1467,7 +1472,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.8 debug dump`];
+  const lines = [`[simple extension] v0.7.9 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

@@ -1095,3 +1095,16 @@
   margin: 4px 8px 7px !important;
   padding: 9px !important;
 }
+
+/* 접힌 상태의 패널이 어떤 접힘 방식(max-height:0 등)을 쓰든
+   알약 간격에 영향을 주지 않도록 스타일시트 차원에서도 보강 */
+#rm_extensions_block .se-native-unit:not(.se-native-unit--open) > .inline-drawer,
+#rm_extensions_block .se-extension-list .se-native-unit > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+#rm_extensions_block .se-native-unit--open .se-native-primary-content {
+  margin-top: 4px !important;
+  margin-bottom: 7px !important;
+}
