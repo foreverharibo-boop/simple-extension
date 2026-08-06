@@ -537,7 +537,7 @@
 }
 
 .se-row-pair > .se-native-unit {
-  flex: 1 1 calc(50% - 3.5px);
+  flex: 0 1 calc(50% - 3.5px);
   min-width: 0;
 }
 

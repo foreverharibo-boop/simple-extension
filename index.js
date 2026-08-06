@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.27 debug report`];
+  const lines = [`[simple extension] v0.7.29 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -336,6 +336,52 @@ function buildDebugReport() {
     );
   });
   if (!extras) lines.push("  (전부 정상 — 간격 균일)");
+  lines.push("");
+  lines.push("===== 짝(row-pair) 구조 점검 (이상 있는 것만) =====");
+  let pairIssues = 0;
+  state.nativeUnits.forEach((unit) => {
+    if (!unit.element.isConnected) return;
+    const pair = unit.element.closest(".se-row-pair");
+    const siblingCount = pair ? pair.querySelectorAll(".se-native-unit").length : 0;
+    const isOpenClass = unit.element.classList.contains("se-native-unit--open");
+    const selfFlag = unit.element.dataset.seSelfOpen === "true";
+    const pairOpenClass = pair?.classList.contains("se-row-pair--open");
+    if (siblingCount === 1 || isOpenClass || selfFlag || pairOpenClass) {
+      pairIssues += 1;
+      lines.push(
+        `  ${unit.title}: 짝인원 ${siblingCount || "짝없음"} / open클래스 ${isOpenClass} / self-open플래그 ${selfFlag} / pair--open ${Boolean(pairOpenClass)}`,
+      );
+    }
+  });
+  if (!pairIssues) lines.push("  (전부 정상 — 짝 구조 이상 없음)");
+  lines.push("");
+  lines.push("===== 서브 드로어 점검 (중첩 inline-drawer 보유 유닛) =====");
+  let subFound = 0;
+  state.nativeUnits.forEach((unit) => {
+    if (!unit.element.isConnected) return;
+    const drawers = [...unit.element.querySelectorAll(".inline-drawer")].filter(
+      (d) => !d.closest(".se-fixed-extension-header, .se-native-movebar"),
+    );
+    if (drawers.length <= 1) return;
+    subFound += 1;
+    const subPills = unit.element.querySelectorAll(
+      ".se-fixed-subdrawer-header",
+    ).length;
+    lines.push(
+      `  ${unit.title} (${unit.key}): inline-drawer ${drawers.length}개 / 생성된 서브알약 ${subPills}개`,
+    );
+    drawers.forEach((d) => {
+      const label =
+        normalizeTitle(
+          d.querySelector(".inline-drawer-toggle, .inline-drawer-header")
+            ?.textContent,
+        ).slice(0, 24) || "(제목없음)";
+      const rect = d.getBoundingClientRect();
+      const disp = getComputedStyle(d).display;
+      lines.push(`      · ${label} [h:${Math.round(rect.height)} d:${disp}]`);
+    });
+  });
+  if (!subFound) lines.push("  (중첩 드로어 보유 유닛 없음)");
   lines.push("");
   lines.push(
     `===== 리스트에서 숨긴 유령 요소 (${state.listStrays?.length || 0}건) =====`,
@@ -1552,8 +1598,21 @@ function render() {
   for (let index = 0; index < unassigned.length; index += 2) {
     const pair = document.createElement("div");
     pair.className = "se-row-pair";
-    pair.append(prepareNativeUnit(unassigned[index]));
-    if (unassigned[index + 1]) pair.append(prepareNativeUnit(unassigned[index + 1]));
+    try {
+      pair.append(prepareNativeUnit(unassigned[index]));
+    } catch (error) {
+      recordDebugError(`prepareNativeUnit(${unassigned[index]?.title})`, error);
+    }
+    if (unassigned[index + 1]) {
+      try {
+        pair.append(prepareNativeUnit(unassigned[index + 1]));
+      } catch (error) {
+        recordDebugError(
+          `prepareNativeUnit(${unassigned[index + 1]?.title})`,
+          error,
+        );
+      }
+    }
     list.append(pair);
   }
   if (!state.nativeUnits.size) {
@@ -1721,7 +1780,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.27 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.29 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1743,7 +1802,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.27 debug dump`];
+  const lines = [`[simple extension] v0.7.29 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
