@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.12 debug report`];
+  const lines = [`[simple extension] v0.7.13 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -325,6 +325,12 @@ function buildDebugReport() {
     lines.push(`  ${unit.title}: +${extra}px${open ? " (열림-정상)" : ""}`);
   });
   if (!extras) lines.push("  (전부 알약 높이와 일치 — 간격 균일)");
+  lines.push("");
+  lines.push(
+    `===== 리스트에서 숨긴 유령 요소 (${state.listStrays?.length || 0}건) =====`,
+  );
+  (state.listStrays || []).forEach((entry) => lines.push(`  ${entry}`));
+  if (!state.listStrays?.length) lines.push("  (없음)");
   const uiRect = state.ui?.getBoundingClientRect();
 
   state.nativeUnits.forEach((unit) => {
@@ -1174,6 +1180,31 @@ function equalizeClosedUnits(unit) {
   });
 }
 
+function sweepListStrays() {
+  // ST 기본 확장들은 자기 설정 블록 옆에 요소를 동적으로 끼워넣는데
+  // ($.after 등), 블록이 SE 리스트로 옮겨진 뒤에는 그 요소가 알약
+  // 사이에 그리드 한 줄을 차지해 간격을 벌린다. 유닛이 아닌 리스트
+  // 자식은 전부 숨긴다 (display:none은 그리드 줄을 만들지 않는다).
+  state.ui
+    ?.querySelectorAll(".se-extension-list, .se-folder-content")
+    .forEach((container) => {
+      [...container.children].forEach((child) => {
+        if (!(child instanceof HTMLElement)) return;
+        if (
+          child.classList.contains("se-native-unit") ||
+          child.classList.contains("se-empty") ||
+          child.dataset.seListStray
+        )
+          return;
+        child.dataset.seListStray = "true";
+        state.listStrays = state.listStrays || [];
+        state.listStrays.push(describeNode(child));
+        if (state.listStrays.length > 30) state.listStrays.shift();
+        child.style.setProperty("display", "none", "important");
+      });
+    });
+}
+
 function normalizeAllNativeUnits() {
   if (state.normalizing || state.rendering) return;
   state.normalizing = true;
@@ -1225,6 +1256,11 @@ function normalizeAllNativeUnits() {
         recordDebugError(`openState(${unit.title})`, error);
       }
     });
+    try {
+      sweepListStrays();
+    } catch (error) {
+      recordDebugError("listStrays", error);
+    }
     try {
       containStrayPanels();
     } catch (error) {
@@ -1543,7 +1579,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.12 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.13 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1565,7 +1601,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.12 debug dump`];
+  const lines = [`[simple extension] v0.7.13 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
