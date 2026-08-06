@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.14 debug report`];
+  const lines = [`[simple extension] v0.7.16 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -317,7 +317,12 @@ function buildDebugReport() {
     if (!unit.element.isConnected) return;
     const pillRect = unit.fixedHeader?.getBoundingClientRect();
     const rect = unit.element.getBoundingClientRect();
-    if (!pillRect?.height || !rect.height) return;
+    if (!pillRect?.height) return;
+    if (!rect.height) {
+      extras += 1;
+      lines.push(`  ${unit.title}: ⚠️ 박스 없음 (display:contents 의심)`);
+      return;
+    }
     const computed = getComputedStyle(unit.element);
     const marginTop = Math.round(parseFloat(computed.marginTop) || 0);
     const marginBottom = Math.round(parseFloat(computed.marginBottom) || 0);
@@ -336,6 +341,25 @@ function buildDebugReport() {
   );
   (state.listStrays || []).forEach((entry) => lines.push(`  ${entry}`));
   if (!state.listStrays?.length) lines.push("  (없음)");
+  lines.push("");
+  lines.push("===== 리스트 그리드 아이템 순서 덤프 =====");
+  state.ui
+    ?.querySelectorAll(".se-extension-list")
+    .forEach((list, listIndex) => {
+      lines.push(`  [리스트 ${listIndex + 1}]`);
+      [...list.children].forEach((child, index) => {
+        if (!(child instanceof HTMLElement)) return;
+        const rect = child.getBoundingClientRect();
+        const display = getComputedStyle(child).display;
+        const title =
+          child.dataset.seNativeKey ||
+          normalizeTitle(child.textContent).slice(0, 20) ||
+          describeNode(child);
+        lines.push(
+          `    ${index + 1}. ${title} [h:${Math.round(rect.height)} d:${display}]`,
+        );
+      });
+    });
   const uiRect = state.ui?.getBoundingClientRect();
 
   state.nativeUnits.forEach((unit) => {
@@ -1588,7 +1612,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.14 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.16 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1610,7 +1634,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.14 debug dump`];
+  const lines = [`[simple extension] v0.7.16 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

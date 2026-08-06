@@ -1120,3 +1120,12 @@
   margin-top: 4px !important;
   margin-bottom: 7px !important;
 }
+
+/* 진범: ST 코어가 기본 확장 컨테이너(.extension_container)에
+   display:contents를 걸어 박스를 없앤다. 박스가 없으면 유닛 rect가
+   0×0이라 모든 측정을 통과하고, 자식들이 각각 그리드 줄을 차지해
+   기본 확장만 알약 간격이 벌어진다. 실제 박스를 강제로 되살린다.
+   (:not([hidden])은 검색 필터의 숨김 동작을 보존하기 위함) */
+#rm_extensions_block .se-native-unit:not([hidden]) {
+  display: block !important;
+}
