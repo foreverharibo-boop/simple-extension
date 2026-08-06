@@ -164,6 +164,7 @@ function findTitleElement(element) {
 }
 
 function extractTitle(element) {
+  if (element.dataset.seLegacyTitle) return element.dataset.seLegacyTitle;
   const titleElement = findTitleElement(element);
   const title = normalizeTitle(titleElement?.textContent);
   if (title) return title;
@@ -304,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.17 debug report`];
+  const lines = [`[simple extension] v0.7.18 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1553,8 +1554,31 @@ function styleNativeTopBar() {
 function syncSoon() {
   window.clearTimeout(state.syncTimer);
   state.syncTimer = window.setTimeout(() => {
+    consolidateLegacyExtrasApi();
     if (registerNativeUnits()) render();
   }, 80);
+}
+
+function consolidateLegacyExtrasApi() {
+  // ST 코어의 "(DEPRECATED) Extras API" 블록은 실제 확장이 아니라 헐거운
+  // <div> 여러 개 + <hr>가 컬럼에 형제로 그냥 놓여 있는 구조라, 유닛
+  // 스캐너가 이걸 이름 없는 확장 조각 여러 개로 잘못 인식했다. 연결 필드가
+  // 들어있는 input을 기준으로 관련 조각들을 하나의 컨테이너로 합친다.
+  if (document.getElementById("se-legacy-extras-api")) return;
+  const urlInput = document.getElementById("extensions_url");
+  if (!urlInput) return;
+  const inputRow = urlInput.closest(".flex-container");
+  const headerRow = inputRow?.previousElementSibling;
+  const hr = headerRow?.previousElementSibling;
+  if (!inputRow || !headerRow?.contains(document.getElementById("extensions_status")))
+    return;
+
+  const wrapper = document.createElement("div");
+  wrapper.id = "se-legacy-extras-api";
+  wrapper.dataset.seLegacyTitle = "외부 API (Deprecated)";
+  headerRow.before(wrapper);
+  wrapper.append(headerRow, inputRow);
+  if (hr?.tagName === "HR") hr.remove();
 }
 
 function initialize() {
@@ -1567,6 +1591,7 @@ function initialize() {
   state.initialized = true;
   state.root = root;
   state.nativeColumns = [first, second];
+  consolidateLegacyExtrasApi();
   loadSettings();
   styleNativeTopBar();
 
@@ -1620,7 +1645,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.17 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.18 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1642,7 +1667,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.17 debug dump`];
+  const lines = [`[simple extension] v0.7.18 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

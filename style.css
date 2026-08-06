@@ -381,11 +381,11 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 10px;
-  min-height: 42px;
-  padding: 7px 8px 7px 11px;
+  gap: 8px;
+  min-height: 32px;
+  padding: 5px 6px 5px 9px;
   border: 1px solid var(--se-border);
-  border-radius: 10px;
+  border-radius: 9px;
   color: var(--se-text);
   background: var(--se-surface);
 }
@@ -414,13 +414,13 @@
 
 .se-folder-icon {
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 7px;
   color: var(--se-accent);
   background: var(--se-accent-soft);
-  font-size: 0.86rem;
+  font-size: 0.78rem;
 }
 
 .se-folder-name {
@@ -442,14 +442,14 @@
 
 .se-count {
   display: grid;
-  min-width: 26px;
-  height: 26px;
+  min-width: 22px;
+  height: 22px;
   place-items: center;
   border: 1px solid var(--se-border);
   border-radius: 999px;
   color: var(--se-muted);
   background: var(--se-surface-2);
-  font-size: 0.74rem;
+  font-size: 0.7rem;
 }
 
 .se-more {
@@ -478,11 +478,13 @@
 
 .se-folder-content {
   display: none;
-  padding: 6px 0 2px 16px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0 3px 14px;
 }
 
 .se-folder.is-open > .se-folder-content {
-  display: block;
+  display: flex;
 }
 .se-extension-row--compact {
   min-height: 32px;
@@ -963,7 +965,7 @@
     width: min(310px, calc(100% - 18px));
   }
   .se-folder-row {
-    min-height: 44px;
+    min-height: 34px;
   }
   .se-settings-bar {
     align-items: stretch;
@@ -1134,4 +1136,19 @@
    알약 클릭 시 data-se-self-open 토글로 펼침. 겹침/생노출 방지. */
 #rm_extensions_block .se-native-unit:not([data-se-self-open="true"]) .se-panel-inset {
   display: none !important;
+}
+
+/* 2열 그리드에서 홀수 개로 마지막 알약 하나만 남으면 옆칸이 빈 공간으로
+   보인다 — 마지막 항목이 짝 없이 남을 때는 전체 폭으로 펼친다. */
+@media (min-width: 700px) {
+  #rm_extensions_block .se-extension-list > .se-native-unit:nth-child(odd):last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 확장 자체 버튼이 폭이 좁을 때 텍스트가 세로로 꺾이는 것 방지
+   (예: 레거시 "연결" 버튼류) */
+#rm_extensions_block .se-native-unit .se-native-custom-panel button,
+#rm_extensions_block .se-native-unit .se-native-custom-panel .menu_button {
+  white-space: nowrap !important;
 }
