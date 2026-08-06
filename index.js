@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.19 debug report`];
+  const lines = [`[simple extension] v0.7.21 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -762,7 +762,18 @@ function updateNativeOpenState(unit) {
     const hasHeight = content.getBoundingClientRect().height > 2;
     isOpen = displayOpen && hasHeight;
   } else {
-    isOpen = unit.element.dataset.seSelfOpen === "true";
+    // 드로어 없는(자체 관리) 유닛도 마찬가지: 실수로 플래그가 true가
+    // 되어도 실제로 펼칠 내용(.se-panel-inset)이 없거나 높이가 0이면
+    // "열림" 취급하지 않는다 — 빈 전체폭 알약이 뜨는 걸 막는다.
+    const flagged = unit.element.dataset.seSelfOpen === "true";
+    const inset = unit.element.querySelector(".se-panel-inset");
+    const insetHasHeight = inset && inset.getBoundingClientRect().height > 2;
+    isOpen = flagged && insetHasHeight;
+    if (flagged && !insetHasHeight) {
+      // 펼칠 내용이 없는데 플래그만 true인 상태 — 다음 클릭에서 정상
+      // 토글되도록 플래그를 되돌려둔다 (좀비 open 상태 방지).
+      unit.element.dataset.seSelfOpen = "false";
+    }
   }
   unit.element.classList.toggle("se-native-unit--open", isOpen);
   unit.fixedHeader?.classList.toggle("is-open", isOpen);
@@ -1653,7 +1664,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.19 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.21 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1675,7 +1686,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.19 debug dump`];
+  const lines = [`[simple extension] v0.7.21 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

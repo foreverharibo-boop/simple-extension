@@ -1138,13 +1138,6 @@
   display: none !important;
 }
 
-/* 2열 그리드에서 홀수 개로 마지막 알약 하나만 남으면 옆칸이 빈 공간으로
-   보인다 — 마지막 항목이 짝 없이 남을 때는 전체 폭으로 펼친다. */
-@media (min-width: 700px) {
-  #rm_extensions_block .se-extension-list > .se-native-unit:nth-child(odd):last-child {
-    grid-column: 1 / -1;
-  }
-}
 
 /* 확장 자체 버튼이 폭이 좁을 때 텍스트가 세로로 꺾이는 것 방지
    (예: 레거시 "연결" 버튼류) */
