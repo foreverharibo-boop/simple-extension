@@ -976,3 +976,21 @@
     justify-content: center;
   }
 }
+
+/* .inline-drawer-content 없이 자체 헤더+패널을 만드는 확장의 커스텀 패널을
+   유닛 폭 안에 강제로 가둔다 (음수 마진·absolute·100%+패딩 폭 무력화). */
+#rm_extensions_block .se-native-unit .se-native-custom-panel {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  float: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}

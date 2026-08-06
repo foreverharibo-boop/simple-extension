@@ -554,6 +554,38 @@ function markNativeContentShell(unit) {
   }
 }
 
+function markCustomPanels(unit) {
+  // Extensions without any .inline-drawer-content render their settings as a
+  // sibling of their own header. Constrain those panels so their full-bleed
+  // CSS (negative margins, absolute positioning, 100%+padding widths) cannot
+  // push them outside the unit.
+  if (findPrimaryContent(unit)) return;
+  const headerEl =
+    (unit.pillHeader?.isConnected && unit.pillHeader) ||
+    (unit.primaryToggle?.isConnected && unit.primaryToggle) ||
+    null;
+  const scope =
+    headerEl?.parentElement && unit.element.contains(headerEl.parentElement)
+      ? headerEl.parentElement
+      : unit.element;
+
+  let shell = scope;
+  while (shell && shell !== unit.element) {
+    shell.classList.add("se-native-content-shell");
+    shell = shell.parentElement;
+  }
+
+  [...scope.children].forEach((child) => {
+    if (child === headerEl) return;
+    if (
+      child.classList.contains("se-fixed-extension-header") ||
+      child.classList.contains("se-native-movebar")
+    )
+      return;
+    child.classList.add("se-native-custom-panel");
+  });
+}
+
 function markFixedContent(unit, content) {
   if (!content) return;
   content.classList.add("se-native-fixed-content");
@@ -706,6 +738,75 @@ function normalizeNativeDrawers(unit) {
     });
 }
 
+// 제목이 여기 포함되면 확장이 직접 그린 중복 헤더 줄을 강제로 숨긴다.
+const FORCE_HIDE_HEADER_TITLES = ["translator"];
+
+function forceHideCustomHeader(unit) {
+  const unitTitle = normalizeTitle(unit.title).toLocaleLowerCase();
+  if (!FORCE_HIDE_HEADER_TITLES.some((name) => unitTitle.includes(name)))
+    return;
+
+  const candidates = [...unit.element.querySelectorAll("*")].filter((node) => {
+    if (!(node instanceof HTMLElement)) return false;
+    if (node.dataset.seForceHidden) return false;
+    if (node.closest(".se-fixed-extension-header, .se-native-movebar"))
+      return false;
+    // 설정 패널(입력 요소 포함)은 절대 건드리지 않는다.
+    if (node.querySelector("input, select, textarea")) return false;
+    const text = normalizeTitle(node.textContent).toLocaleLowerCase();
+    if (!text || text.length > unitTitle.length + 8) return false;
+    return text.includes(unitTitle) || unitTitle.includes(text);
+  });
+  // 후보 중 가장 바깥 요소 = 헤더 줄 전체
+  const header = candidates.find(
+    (node) =>
+      node !== unit.element &&
+      !candidates.some((other) => other !== node && other.contains(node)),
+  );
+  if (!header) return;
+
+  const icon =
+    header.querySelector('.inline-drawer-icon, [class*="chevron" i]') || header;
+  unit.primaryToggle = icon;
+  header.dataset.seForceHidden = "true";
+  header.style.setProperty("display", "none", "important");
+}
+
+function clampOverflowingDescendants(unit) {
+  const host = unit.element;
+  if (!host.isConnected) return;
+  const bounds = host.getBoundingClientRect();
+  // 접혀서 알약만 보일 때는 검사할 필요 없음
+  if (!bounds.width || bounds.height < 60) return;
+  const slack = 2;
+
+  host.querySelectorAll("*").forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    if (node.dataset.seClamped) return;
+    if (node.closest(".se-fixed-extension-header, .se-native-movebar")) return;
+    const rect = node.getBoundingClientRect();
+    if (!rect.width) return;
+    if (rect.left >= bounds.left - slack && rect.right <= bounds.right + slack)
+      return;
+
+    // 유닛 밖으로 삐져나간 요소를 인라인 !important로 강제 고정.
+    // 인라인 스타일이라 해당 확장의 어떤 CSS보다 우선한다.
+    node.dataset.seClamped = "true";
+    const style = node.style;
+    style.setProperty("position", "relative", "important");
+    style.setProperty("top", "auto", "important");
+    style.setProperty("left", "auto", "important");
+    style.setProperty("right", "auto", "important");
+    style.setProperty("bottom", "auto", "important");
+    style.setProperty("transform", "none", "important");
+    style.setProperty("float", "none", "important");
+    style.setProperty("margin-left", "0", "important");
+    style.setProperty("margin-right", "0", "important");
+    style.setProperty("max-width", "100%", "important");
+    style.setProperty("box-sizing", "border-box", "important");
+  });
+}
+
 function normalizeAllNativeUnits() {
   if (state.normalizing || state.rendering) return;
   state.normalizing = true;
@@ -719,7 +820,10 @@ function normalizeAllNativeUnits() {
       const pillHeader = header ? findPillHeader(unit, header) : null;
       ensureFixedHeader(unit, header, pillHeader);
       markNativeContentShell(unit);
+      markCustomPanels(unit);
       normalizeNativeDrawers(unit);
+      forceHideCustomHeader(unit);
+      clampOverflowingDescendants(unit);
       updateNativeOpenState(unit);
     });
   } finally {
@@ -784,6 +888,7 @@ function prepareNativeUnit(unit) {
   unit.pillHeader = pillHeader;
   ensureFixedHeader(unit, header, pillHeader);
   markNativeContentShell(unit);
+  markCustomPanels(unit);
   normalizeNativeDrawers(unit);
   if (header && !header.dataset.seNativeListener) {
     header.dataset.seNativeListener = "true";
@@ -1034,9 +1139,38 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.3 loaded — native SillyTavern layout themed");
   return true;
 }
+
+function outlineElement(element, depth = 0, maxDepth = 5) {
+  if (!(element instanceof HTMLElement) || depth > maxDepth) return [];
+  const id = element.id ? `#${element.id}` : "";
+  const cls = [...element.classList]
+    .slice(0, 8)
+    .map((name) => `.${name}`)
+    .join("");
+  const line = `${"  ".repeat(depth)}<${element.tagName.toLowerCase()}${id}${cls}>`;
+  return [
+    line,
+    ...[...element.children].flatMap((child) =>
+      outlineElement(child, depth + 1, maxDepth),
+    ),
+  ];
+}
+
+globalThis.simpleExtensionDebug = (filter = "") => {
+  const query = String(filter).toLocaleLowerCase();
+  const lines = [`[simple extension] v0.7.3 debug dump`];
+  state.nativeUnits.forEach((unit) => {
+    if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
+    lines.push(`===== ${unit.title} (${unit.key}) =====`);
+    lines.push(...outlineElement(unit.element));
+  });
+  const dump = lines.join("\n");
+  console.log(dump);
+  return dump;
+};
 
 if (!initialize()) {
   const timer = window.setInterval(() => {
