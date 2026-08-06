@@ -807,6 +807,67 @@ function clampOverflowingDescendants(unit) {
   });
 }
 
+function alignOutermostOffenders(node, pillRect, depth = 0) {
+  if (!(node instanceof HTMLElement) || depth > 6) return;
+  if (
+    node.classList.contains("se-fixed-extension-header") ||
+    node.classList.contains("se-native-movebar")
+  )
+    return;
+  const rect = node.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+
+  const overLeft = pillRect.left - rect.left; // >0: 알약보다 왼쪽으로 삐져나감
+  const overRight = rect.right - pillRect.right; // >0: 오른쪽으로 삐져나감
+  if (overLeft > 1 || overRight > 1) {
+    const currentMargin =
+      parseFloat(getComputedStyle(node).marginLeft) || 0;
+    const style = node.style;
+    style.setProperty("position", "relative", "important");
+    style.setProperty("top", "auto", "important");
+    style.setProperty("left", "auto", "important");
+    style.setProperty("right", "auto", "important");
+    style.setProperty("bottom", "auto", "important");
+    style.setProperty("transform", "none", "important");
+    style.setProperty("float", "none", "important");
+    style.setProperty("box-sizing", "border-box", "important");
+    if (overLeft > 1) {
+      style.setProperty(
+        "margin-left",
+        `${currentMargin + overLeft}px`,
+        "important",
+      );
+    }
+    if (rect.width > pillRect.width + 1) {
+      style.setProperty("width", `${pillRect.width}px`, "important");
+      style.setProperty("max-width", "100%", "important");
+    } else if (overRight > 1 && overLeft <= 1) {
+      style.setProperty(
+        "margin-left",
+        `${currentMargin - overRight}px`,
+        "important",
+      );
+    }
+    // 가장 바깥 요소만 맞추면 내부는 따라온다. 다음 주기에 재측정해 수렴.
+    return;
+  }
+
+  [...node.children].forEach((child) =>
+    alignOutermostOffenders(child, pillRect, depth + 1),
+  );
+}
+
+function forceAlignToPill(unit) {
+  const pill = unit.fixedHeader;
+  if (!pill?.isConnected) return;
+  const pillRect = pill.getBoundingClientRect();
+  if (!pillRect.width) return;
+  [...unit.element.children].forEach((child) => {
+    if (child === pill) return;
+    alignOutermostOffenders(child, pillRect, 0);
+  });
+}
+
 function normalizeAllNativeUnits() {
   if (state.normalizing || state.rendering) return;
   state.normalizing = true;
@@ -824,6 +885,7 @@ function normalizeAllNativeUnits() {
       normalizeNativeDrawers(unit);
       forceHideCustomHeader(unit);
       clampOverflowingDescendants(unit);
+      forceAlignToPill(unit);
       updateNativeOpenState(unit);
     });
   } finally {
@@ -1139,7 +1201,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.3 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.4 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1161,7 +1223,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.3 debug dump`];
+  const lines = [`[simple extension] v0.7.4 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
