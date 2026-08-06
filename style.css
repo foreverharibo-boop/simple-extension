@@ -573,9 +573,7 @@
   display: flex !important;
   width: 100% !important;
   max-width: 100% !important;
-  height: 34px !important;
   min-height: 34px !important;
-  max-height: 34px !important;
   align-items: center;
   gap: 6px;
   margin: 0 !important;
@@ -592,10 +590,6 @@
   text-align: left;
   cursor: pointer;
   box-sizing: border-box;
-}
-
-.se-fixed-extension-header * {
-  max-height: 100%;
 }
 
 .se-fixed-subdrawer-header {

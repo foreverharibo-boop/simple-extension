@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.23 debug report`];
+  const lines = [`[simple extension] v0.7.24 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -891,9 +891,24 @@ function ensureFixedHeader(unit, originalToggle, originalHeader) {
         const open = unit.element.dataset.seSelfOpen === "true";
         unit.element.dataset.seSelfOpen = open ? "false" : "true";
       }
+      // 여백은 normalize 주기를 기다리지 않고 클릭 즉시 건다. ST의
+      // 슬라이드 애니메이션이 진행되는 동안에도 첫 프레임부터 여백이
+      // 있어야, "펼쳐지며 퍼졌다가 나중에 여백 생김" 깜빡임이 없다.
+      enforceContentBox(unit);
+      markCustomPanels(unit);
       unit.primaryToggle?.click();
-      requestAnimationFrame(() => updateNativeOpenState(unit));
-      window.setTimeout(() => updateNativeOpenState(unit), 250);
+      enforceContentBox(unit);
+      requestAnimationFrame(() => {
+        enforceContentBox(unit);
+        updateNativeOpenState(unit);
+      });
+      window.setTimeout(() => {
+        enforceContentBox(unit);
+        updateNativeOpenState(unit);
+      }, 250);
+      [60, 120, 180].forEach((delay) => {
+        window.setTimeout(() => enforceContentBox(unit), delay);
+      });
     });
   }
 
@@ -1664,7 +1679,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.23 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.24 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1686,7 +1701,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.23 debug dump`];
+  const lines = [`[simple extension] v0.7.24 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
