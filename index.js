@@ -270,6 +270,133 @@ function renderThemePicker() {
   oldPicker.replaceWith(picker);
 }
 
+function describeNode(node) {
+  const id = node.id ? `#${node.id}` : "";
+  const cls = [...node.classList]
+    .slice(0, 8)
+    .map((name) => `.${name}`)
+    .join("");
+  return `<${node.tagName.toLowerCase()}${id}${cls}>`;
+}
+
+function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
+  if (!(node instanceof HTMLElement) || depth > 12) return lines;
+  const rect = node.getBoundingClientRect();
+  const computed = getComputedStyle(node);
+  const overLeft = pillRect ? Math.round(pillRect.left - rect.left) : 0;
+  const overRight = pillRect ? Math.round(rect.right - pillRect.right) : 0;
+  const flag =
+    rect.width && (overLeft > 1 || overRight > 1) ? "  ⚠️OVERFLOW" : "";
+  const geo = rect.width
+    ? ` [x:${Math.round(rect.left)} w:${Math.round(rect.width)} pos:${computed.position} ml:${computed.marginLeft} tf:${computed.transform === "none" ? "-" : "yes"}]`
+    : " [hidden]";
+  lines.push(`${"  ".repeat(depth)}${describeNode(node)}${geo}${flag}`);
+  if (node.shadowRoot) {
+    lines.push(`${"  ".repeat(depth + 1)}#shadow-root`);
+    [...node.shadowRoot.children].forEach((child) =>
+      outlineWithGeometry(child, pillRect, depth + 2, lines),
+    );
+  }
+  [...node.children].forEach((child) =>
+    outlineWithGeometry(child, pillRect, depth + 1, lines),
+  );
+  return lines;
+}
+
+function buildDebugReport() {
+  const lines = [`[simple extension] v0.7.5 debug report`];
+  const uiRect = state.ui?.getBoundingClientRect();
+
+  state.nativeUnits.forEach((unit) => {
+    if (!unit.element.isConnected) return;
+    const rect = unit.element.getBoundingClientRect();
+    // 펼쳐진(높이가 있는) 유닛만 상세 출력해서 리포트를 짧게 유지
+    if (rect.height < 70) return;
+    const pillRect = unit.fixedHeader?.getBoundingClientRect() || null;
+    lines.push("");
+    lines.push(`===== ${unit.title} (${unit.key}) =====`);
+    lines.push(
+      `pill: x:${Math.round(pillRect?.left ?? -1)} w:${Math.round(pillRect?.width ?? -1)} / unit: x:${Math.round(rect.left)} w:${Math.round(rect.width)}`,
+    );
+    outlineWithGeometry(unit.element, pillRect, 0, lines);
+  });
+
+  // SE UI 바깥에서 화면상 확장 목록 영역과 겹치는 보이는 요소 탐색
+  if (uiRect) {
+    lines.push("");
+    lines.push("===== UI 바깥의 의심 요소 (body 전체 스캔) =====");
+    let found = 0;
+    [...document.body.querySelectorAll("*")].some((node) => {
+      if (!(node instanceof HTMLElement)) return false;
+      if (state.ui.contains(node) || node.closest(".se-debug-modal"))
+        return false;
+      const rect = node.getBoundingClientRect();
+      if (!rect.width || rect.height < 30) return false;
+      const verticalOverlap =
+        rect.top < uiRect.bottom && rect.bottom > uiRect.top;
+      if (!verticalOverlap) return false;
+      if (rect.left >= uiRect.left - 2 && rect.right <= uiRect.right + 2)
+        return false;
+      if (!node.querySelector("input, select, textarea")) return false;
+      const path = [];
+      let current = node;
+      while (current && current !== document.body && path.length < 6) {
+        path.unshift(describeNode(current));
+        current = current.parentElement;
+      }
+      lines.push(
+        `${path.join(" > ")} [x:${Math.round(rect.left)} w:${Math.round(rect.width)}]`,
+      );
+      return ++found >= 15;
+    });
+    if (!found) lines.push("(없음)");
+  }
+
+  return lines.join("\n");
+}
+
+function showDebugModal() {
+  document.querySelectorAll(".se-debug-modal").forEach((el) => el.remove());
+  const modal = document.createElement("div");
+  modal.className = "se-debug-modal se-ignore-native";
+
+  const box = document.createElement("div");
+  box.className = "se-debug-box";
+  const title = document.createElement("div");
+  title.className = "se-debug-title";
+  title.textContent = "디버그 리포트 — 전체 복사해서 붙여넣어 줘";
+  const area = document.createElement("textarea");
+  area.readOnly = true;
+  area.value = buildDebugReport();
+
+  const buttons = document.createElement("div");
+  buttons.className = "se-debug-buttons";
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.textContent = "📋 복사";
+  copy.addEventListener("click", async () => {
+    let done = false;
+    try {
+      await navigator.clipboard.writeText(area.value);
+      done = true;
+    } catch {
+      area.focus();
+      area.select();
+      done = document.execCommand("copy");
+    }
+    copy.textContent = done ? "✅ 복사됨" : "❌ 직접 선택해서 복사해줘";
+  });
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "닫기";
+  close.addEventListener("click", () => modal.remove());
+  buttons.append(copy, close);
+
+  box.append(title, area, buttons);
+  modal.append(box);
+  document.body.append(modal);
+}
+
 function createToolbar() {
   const toolbar = document.createElement("div");
   toolbar.className = "se-toolbar";
@@ -282,7 +409,14 @@ function createToolbar() {
   input.autocomplete = "off";
   input.addEventListener("input", () => applySearch(input.value));
   search.append(input);
-  toolbar.append(search);
+  const debug = document.createElement("button");
+  debug.type = "button";
+  debug.className = "se-text-button se-debug-open";
+  debug.title = "디버그 리포트";
+  debug.setAttribute("aria-label", "디버그 리포트");
+  debug.textContent = "🐞";
+  debug.addEventListener("click", showDebugModal);
+  toolbar.append(search, debug);
   return toolbar;
 }
 
@@ -808,7 +942,7 @@ function clampOverflowingDescendants(unit) {
 }
 
 function alignOutermostOffenders(node, pillRect, depth = 0) {
-  if (!(node instanceof HTMLElement) || depth > 6) return;
+  if (!(node instanceof HTMLElement) || depth > 12) return;
   if (
     node.classList.contains("se-fixed-extension-header") ||
     node.classList.contains("se-native-movebar")
@@ -852,9 +986,36 @@ function alignOutermostOffenders(node, pillRect, depth = 0) {
     return;
   }
 
-  [...node.children].forEach((child) =>
+  const kids = [...(node.shadowRoot?.children || []), ...node.children];
+  kids.forEach((child) =>
     alignOutermostOffenders(child, pillRect, depth + 1),
   );
+}
+
+function containStrayPanels() {
+  // 유닛 바깥(확장 블록 어딘가)에 패널을 직접 붙이는 확장 대응:
+  // SE UI에 속하지 않으면서 알약 폭을 벗어난 보이는 요소를 강제로 맞춘다.
+  if (!state.ui || !state.root) return;
+  const sample = [...state.nativeUnits.values()].find(
+    (unit) =>
+      unit.fixedHeader?.isConnected &&
+      unit.fixedHeader.getBoundingClientRect().width,
+  );
+  if (!sample) return;
+  const pillRect = sample.fixedHeader.getBoundingClientRect();
+
+  [...state.root.querySelectorAll("*")].forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    if (node === state.ui || state.ui.contains(node)) return;
+    if (node.closest(".se-native-topbar")) return;
+    const rect = node.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const overLeft = pillRect.left - rect.left;
+    const overRight = rect.right - pillRect.right;
+    if (overLeft > 1 || overRight > 1 || rect.width > pillRect.width + 2) {
+      alignOutermostOffenders(node, pillRect, 12); // 이 노드 자체만 보정
+    }
+  });
 }
 
 function forceAlignToPill(unit) {
@@ -888,6 +1049,7 @@ function normalizeAllNativeUnits() {
       forceAlignToPill(unit);
       updateNativeOpenState(unit);
     });
+    containStrayPanels();
   } finally {
     state.normalizing = false;
   }
@@ -1201,7 +1363,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.4 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.5 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1223,7 +1385,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.4 debug dump`];
+  const lines = [`[simple extension] v0.7.5 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
