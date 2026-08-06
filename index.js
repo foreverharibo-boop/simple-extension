@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.38 debug report`];
+  const lines = [`[simple extension] v0.7.39 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -757,6 +757,10 @@ function updateDrawerOpenState(toggle, content, fixed) {
   fixed.classList.toggle("is-open", isOpen);
   fixed.setAttribute("aria-expanded", String(isOpen));
   toggle?.setAttribute("aria-expanded", String(isOpen));
+  // 서브 드로어가 접혀 있으면 그 콘텐츠가 여전히 박스(마진/패딩/보더)를
+  // 차지해 서브알약 밑에 여분 공간이 생긴다. 접혔을 때는 콘텐츠 박스를
+  // 완전히 접도록 클래스로 표시한다 (펼치면 원래대로).
+  content.classList.toggle("se-subdrawer-collapsed", !isOpen);
 }
 
 function enforceContentBox(unit) {
@@ -1761,7 +1765,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.38 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.39 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1783,7 +1787,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.38 debug dump`];
+  const lines = [`[simple extension] v0.7.39 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

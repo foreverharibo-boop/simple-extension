@@ -1170,3 +1170,16 @@
 #rm_extensions_block .se-native-unit .se-native-custom-panel .menu_button {
   white-space: nowrap !important;
 }
+
+/* 접힌 서브 드로어 콘텐츠는 박스를 완전히 접는다 — 서브알약 밑 여분 공간
+   (리포트에서 sd-container +38px로 측정된 유령 높이) 제거. */
+#rm_extensions_block .se-native-unit .se-native-fixed-content.se-subdrawer-collapsed,
+#rm_extensions_block .se-native-unit .inline-drawer-content.se-subdrawer-collapsed {
+  height: 0 !important;
+  max-height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
