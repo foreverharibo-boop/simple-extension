@@ -304,12 +304,27 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.11 debug report`];
+  const lines = [`[simple extension] v0.7.12 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
   );
   (state.debugErrors || []).forEach((message) => lines.push(`  - ${message}`));
+  lines.push("");
+  lines.push("===== 유닛 높이 요약 (유닛높이 - 알약높이, +3px 이상만) =====");
+  let extras = 0;
+  state.nativeUnits.forEach((unit) => {
+    if (!unit.element.isConnected) return;
+    const pillRect = unit.fixedHeader?.getBoundingClientRect();
+    const rect = unit.element.getBoundingClientRect();
+    if (!pillRect?.height || !rect.height) return;
+    const extra = Math.round(rect.height - pillRect.height);
+    if (extra < 3) return;
+    extras += 1;
+    const open = unit.element.classList.contains("se-native-unit--open");
+    lines.push(`  ${unit.title}: +${extra}px${open ? " (열림-정상)" : ""}`);
+  });
+  if (!extras) lines.push("  (전부 알약 높이와 일치 — 간격 균일)");
   const uiRect = state.ui?.getBoundingClientRect();
 
   state.nativeUnits.forEach((unit) => {
@@ -1093,6 +1108,72 @@ function recordDebugError(scope, error) {
   if (state.debugErrors.length > 20) state.debugErrors.shift();
 }
 
+function flattenClosedElement(node, depth = 0) {
+  if (!(node instanceof HTMLElement) || depth > 8) return;
+  const style = node.style;
+  style.setProperty("margin-top", "0", "important");
+  style.setProperty("margin-bottom", "0", "important");
+  style.setProperty("padding-top", "0", "important");
+  style.setProperty("padding-bottom", "0", "important");
+  style.setProperty("border-top-width", "0", "important");
+  style.setProperty("border-bottom-width", "0", "important");
+  style.setProperty("min-height", "0", "important");
+  [...node.children].forEach((child) => {
+    if (!(child instanceof HTMLElement)) return;
+    // 패널 본체의 세로 박스는 enforceContentBox가 열림/접힘에 따라 관리
+    if (child.classList.contains("se-native-primary-content")) return;
+    const rect = child.getBoundingClientRect();
+    const computed = getComputedStyle(child);
+    if (
+      rect.height > 1 ||
+      parseFloat(computed.marginTop) > 0 ||
+      parseFloat(computed.marginBottom) > 0
+    ) {
+      flattenClosedElement(child, depth + 1);
+    }
+  });
+}
+
+function equalizeClosedUnits(unit) {
+  const pill = unit.fixedHeader;
+  if (!pill?.isConnected) return;
+  const pillRect = pill.getBoundingClientRect();
+  const unitRect = unit.element.getBoundingClientRect();
+  if (!pillRect.height || !unitRect.height) return;
+  if (unitRect.height - pillRect.height <= 2) return;
+
+  // 패널이 열려 있으면 유닛이 큰 게 정상
+  const content = findPrimaryContent(unit);
+  const contentOpen =
+    content &&
+    getComputedStyle(content).display !== "none" &&
+    content.getBoundingClientRect().height > 2;
+  const customOpen = [
+    ...unit.element.querySelectorAll(".se-native-custom-panel"),
+  ].some(
+    (panel) =>
+      getComputedStyle(panel).display !== "none" &&
+      panel.getBoundingClientRect().height > 2,
+  );
+  if (contentOpen || customOpen) return;
+
+  // 접혀 있는데 알약보다 크다 → 여분 높이를 만드는 요소를 납작하게.
+  // 원인(마진/패딩/보더/min-height)이 뭐든 측정으로 잡는다.
+  [...unit.element.children].forEach((child) => {
+    if (child === pill) return;
+    if (!(child instanceof HTMLElement)) return;
+    const rect = child.getBoundingClientRect();
+    const computed = getComputedStyle(child);
+    if (
+      rect.height > 1 ||
+      parseFloat(computed.marginTop) > 0 ||
+      parseFloat(computed.marginBottom) > 0
+    ) {
+      flattenClosedElement(child);
+    }
+  });
+}
+
 function normalizeAllNativeUnits() {
   if (state.normalizing || state.rendering) return;
   state.normalizing = true;
@@ -1132,6 +1213,11 @@ function normalizeAllNativeUnits() {
         forceAlignToPill(unit);
       } catch (error) {
         recordDebugError(`align(${unit.title})`, error);
+      }
+      try {
+        equalizeClosedUnits(unit);
+      } catch (error) {
+        recordDebugError(`equalize(${unit.title})`, error);
       }
       try {
         updateNativeOpenState(unit);
@@ -1457,7 +1543,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.11 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.12 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1479,7 +1565,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.11 debug dump`];
+  const lines = [`[simple extension] v0.7.12 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
