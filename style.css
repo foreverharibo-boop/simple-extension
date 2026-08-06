@@ -1129,3 +1129,9 @@
 #rm_extensions_block .se-native-unit:not([hidden]) {
   display: block !important;
 }
+
+/* 드로어 없는 확장의 패널 래퍼는 SE가 접힘 상태를 관리 — 기본은 접힘.
+   알약 클릭 시 data-se-self-open 토글로 펼침. 겹침/생노출 방지. */
+#rm_extensions_block .se-native-unit:not([data-se-self-open="true"]) .se-panel-inset {
+  display: none !important;
+}

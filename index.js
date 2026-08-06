@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.16 debug report`];
+  const lines = [`[simple extension] v0.7.17 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -752,8 +752,9 @@ function enforceContentBox(unit) {
 
 function updateNativeOpenState(unit) {
   const content = findPrimaryContent(unit);
-  if (!content) return;
-  const isOpen = getComputedStyle(content).display !== "none";
+  const isOpen = content
+    ? getComputedStyle(content).display !== "none"
+    : unit.element.dataset.seSelfOpen === "true";
   unit.element.classList.toggle("se-native-unit--open", isOpen);
   unit.fixedHeader?.classList.toggle("is-open", isOpen);
   unit.fixedHeader?.setAttribute("aria-expanded", String(isOpen));
@@ -863,6 +864,13 @@ function ensureFixedHeader(unit, originalToggle, originalHeader) {
     fixed.className = "se-fixed-extension-header se-ignore-native";
     unit.element.prepend(fixed);
     fixed.addEventListener("click", () => {
+      // 드로어가 아예 없는 확장(설정이 생 input들)은 접힘 개념이 없어
+      // 내용물이 리스트에 그대로 눕는다. 그런 유닛은 SE가 직접
+      // 접기/펼치기 상태를 관리한다 (패널 래퍼 표시 여부로 제어).
+      if (!findPrimaryContent(unit)) {
+        const open = unit.element.dataset.seSelfOpen === "true";
+        unit.element.dataset.seSelfOpen = open ? "false" : "true";
+      }
       unit.primaryToggle?.click();
       requestAnimationFrame(() => updateNativeOpenState(unit));
       window.setTimeout(() => updateNativeOpenState(unit), 250);
@@ -1612,7 +1620,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.16 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.17 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1634,7 +1642,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.16 debug dump`];
+  const lines = [`[simple extension] v0.7.17 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
