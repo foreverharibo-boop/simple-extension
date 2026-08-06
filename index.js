@@ -29,7 +29,6 @@ const SORT_LABELS = Object.freeze({
   "name-asc": "이름순",
   "name-desc": "이름 역순",
   original: "원래 순서",
-  folder: "폴더순",
 });
 
 const state = {
@@ -305,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.36 debug report`];
+  const lines = [`[simple extension] v0.7.37 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -542,7 +541,10 @@ function createSortControl() {
     option.textContent = name;
     select.append(option);
   });
-  select.value = state.settings.sort || "name-asc";
+  select.value =
+    state.settings.sort && state.settings.sort in SORT_LABELS
+      ? state.settings.sort
+      : "name-asc";
   select.addEventListener("change", () => {
     state.settings.sort = select.value;
     saveSettings();
@@ -560,19 +562,6 @@ function sortUnits(units) {
       return list.sort((a, b) => byName(b, a));
     case "original":
       return list.sort((a, b) => a.originalIndex - b.originalIndex);
-    case "folder": {
-      const order = new Map(
-        state.settings.folders.map((folder, index) => [folder.id, index]),
-      );
-      return list.sort((a, b) => {
-        const aOrder = order.get(state.settings.assignments[a.key]);
-        const bOrder = order.get(state.settings.assignments[b.key]);
-        return (
-          (aOrder ?? Number.MAX_SAFE_INTEGER) -
-            (bOrder ?? Number.MAX_SAFE_INTEGER) || byName(a, b)
-        );
-      });
-    }
     default:
       return list.sort(byName);
   }
@@ -1761,7 +1750,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.36 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.37 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1783,7 +1772,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.36 debug dump`];
+  const lines = [`[simple extension] v0.7.37 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
