@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.25 debug report`];
+  const lines = [`[simple extension] v0.7.27 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -348,7 +348,7 @@ function buildDebugReport() {
     ?.querySelectorAll(".se-extension-list")
     .forEach((list, listIndex) => {
       lines.push(`  [리스트 ${listIndex + 1}]`);
-      [...list.children].forEach((child, index) => {
+      [...list.querySelectorAll(".se-native-unit")].forEach((child, index) => {
         if (!(child instanceof HTMLElement)) return;
         const rect = child.getBoundingClientRect();
         const display = getComputedStyle(child).display;
@@ -749,6 +749,19 @@ function enforceContentBox(unit) {
   style.setProperty("margin", collapsed ? "0 8px" : "4px 8px 7px", "important");
   style.setProperty("padding", collapsed ? "0" : "9px", "important");
   style.setProperty("box-sizing", "border-box", "important");
+  // 방어적 초기화: 이전에 어떤 경로로든 height/overflow 잠금이 걸렸다면
+  // 실제 콘텐츠와 그 조상 셸에서는 항상 풀어둔다 — 이 요소는 열림/닫힘을
+  // display로 스스로 제어하므로 height를 강제로 잠글 대상이 아니다.
+  let shell = content;
+  let hops = 0;
+  while (shell instanceof HTMLElement && hops < 8) {
+    shell.style.removeProperty("height");
+    shell.style.removeProperty("max-height");
+    shell.style.removeProperty("overflow");
+    if (shell === unit.element) break;
+    shell = shell.parentElement;
+    hops += 1;
+  }
 }
 
 function updateNativeOpenState(unit) {
@@ -778,6 +791,13 @@ function updateNativeOpenState(unit) {
   unit.element.classList.toggle("se-native-unit--open", isOpen);
   unit.fixedHeader?.classList.toggle("is-open", isOpen);
   unit.fixedHeader?.setAttribute("aria-expanded", String(isOpen));
+  const pair = unit.element.closest(".se-row-pair");
+  if (pair) {
+    const anyOpen = [...pair.children].some((child) =>
+      child.classList.contains("se-native-unit--open"),
+    );
+    pair.classList.toggle("se-row-pair--open", anyOpen);
+  }
 }
 
 function markNativeContentShell(unit) {
@@ -1197,11 +1217,20 @@ function flattenClosedElement(node, depth = 0) {
   style.setProperty("border-bottom-width", "0", "important");
   style.setProperty("min-height", "0", "important");
   // 마진/패딩만으로는 못 잡는 경우: 확장이 명시적 height(px)로 항상
-  // 보이는 요소를 만들면 접힌 상태에서도 그 높이만큼 삐져나온다.
-  // 접힌 유닛의 자식은 실제 높이(px)와 overflow까지 강제로 눌러 감춘다.
-  style.setProperty("height", "0", "important");
-  style.setProperty("max-height", "0", "important");
-  style.setProperty("overflow", "hidden", "important");
+  // 보이는 요소를 만들면 접힌 상태에서도 그 높이만큼 삐져나온다. 단,
+  // 실제 펼침 대상 콘텐츠(.se-native-primary-content/.se-panel-inset)를
+  // 담고 있거나 그 자체인 노드는 절대 여기서 height:0으로 잠그지 않는다
+  // — 인라인 !important는 나중에 펼쳐도 안 풀려서 영구 먹통이 된다.
+  // 진짜 콘텐츠와 무관한(그 안에 없는) 노드만 완전히 접는다.
+  const holdsRealContent =
+    node.classList.contains("se-native-primary-content") ||
+    node.classList.contains("se-panel-inset") ||
+    node.querySelector(".se-native-primary-content, .se-panel-inset");
+  if (!holdsRealContent) {
+    style.setProperty("height", "0", "important");
+    style.setProperty("max-height", "0", "important");
+    style.setProperty("overflow", "hidden", "important");
+  }
   [...node.children].forEach((child) => {
     if (!(child instanceof HTMLElement)) return;
     // 패널 본체의 세로 박스는 enforceContentBox가 열림/접힘에 따라 관리
@@ -1264,12 +1293,13 @@ function sweepListStrays() {
   // 사이에 그리드 한 줄을 차지해 간격을 벌린다. 유닛이 아닌 리스트
   // 자식은 전부 숨긴다 (display:none은 그리드 줄을 만들지 않는다).
   state.ui
-    ?.querySelectorAll(".se-extension-list, .se-folder-content")
+    ?.querySelectorAll(".se-extension-list, .se-row-pair, .se-folder-content")
     .forEach((container) => {
       [...container.children].forEach((child) => {
         if (!(child instanceof HTMLElement)) return;
         if (
           child.classList.contains("se-native-unit") ||
+          child.classList.contains("se-row-pair") ||
           child.classList.contains("se-empty") ||
           child.dataset.seListStray
         )
@@ -1519,7 +1549,13 @@ function render() {
   all.append(allTitle);
   const list = document.createElement("div");
   list.className = "se-extension-list";
-  unassigned.forEach((unit) => list.append(prepareNativeUnit(unit)));
+  for (let index = 0; index < unassigned.length; index += 2) {
+    const pair = document.createElement("div");
+    pair.className = "se-row-pair";
+    pair.append(prepareNativeUnit(unassigned[index]));
+    if (unassigned[index + 1]) pair.append(prepareNativeUnit(unassigned[index + 1]));
+    list.append(pair);
+  }
   if (!state.nativeUnits.size) {
     const empty = document.createElement("div");
     empty.className = "se-empty";
@@ -1685,7 +1721,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.25 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.27 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1707,7 +1743,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.25 debug dump`];
+  const lines = [`[simple extension] v0.7.27 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

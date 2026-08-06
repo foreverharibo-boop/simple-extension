@@ -524,10 +524,32 @@
 }
 
 .se-extension-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-flow: row dense;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.se-row-pair {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 4px 7px;
+}
+
+.se-row-pair > .se-native-unit {
+  flex: 1 1 calc(50% - 3.5px);
+  min-width: 0;
+}
+
+/* 짝 안에서 하나라도 펼쳐지면 그 짝만 세로로 쌓는다. 왼쪽/오른쪽 상관없이
+   항상 "제자리에서" 펼쳐지는 것처럼 보이고, 다른 짝에는 전혀 영향 없다. */
+.se-row-pair--open {
+  flex-direction: column;
+}
+
+.se-row-pair--open > .se-native-unit {
+  flex: 1 1 auto;
+  width: 100%;
 }
 
 .se-native-source {
@@ -551,7 +573,6 @@
 }
 
 .se-native-unit.se-native-unit--open {
-  grid-column: 1 / -1;
   width: 100% !important;
   max-width: 100% !important;
   overflow: visible !important;
@@ -958,8 +979,12 @@
   .se-search {
     width: 100%;
   }
-  .se-extension-list {
-    grid-template-columns: minmax(0, 1fr);
+  .se-row-pair {
+    flex-direction: column;
+  }
+  .se-row-pair > .se-native-unit {
+    flex: 1 1 auto;
+    width: 100%;
   }
   .se-theme-picker {
     right: 9px;
