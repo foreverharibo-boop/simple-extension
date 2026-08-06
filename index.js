@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.6 debug report`];
+  const lines = [`[simple extension] v0.7.7 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -718,10 +718,34 @@ function markCustomPanels(unit) {
     if (child === headerEl) return;
     if (
       child.classList.contains("se-fixed-extension-header") ||
-      child.classList.contains("se-native-movebar")
+      child.classList.contains("se-native-movebar") ||
+      child.classList.contains("se-panel-inset") ||
+      child.classList.contains("se-native-original-header") ||
+      child.dataset.seForceHidden
     )
       return;
     child.classList.add("se-native-custom-panel");
+    // 심플 확장 소유의 래퍼로 감싼다. 여백은 래퍼 패딩에서 나오므로
+    // 원본 확장의 CSS/JS가 어떤 스타일을 쓰든 빼앗을 수 없다.
+    if (!child.parentElement?.classList.contains("se-panel-inset")) {
+      [
+        "position",
+        "top",
+        "left",
+        "right",
+        "bottom",
+        "transform",
+        "float",
+        "margin-left",
+        "margin-right",
+        "width",
+        "max-width",
+      ].forEach((prop) => child.style.removeProperty(prop));
+      const inset = document.createElement("div");
+      inset.className = "se-panel-inset se-ignore-native";
+      child.before(inset);
+      inset.append(child);
+    }
   });
 }
 
@@ -1401,7 +1425,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.6 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.7 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1423,7 +1447,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.6 debug dump`];
+  const lines = [`[simple extension] v0.7.7 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

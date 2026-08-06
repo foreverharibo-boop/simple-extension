@@ -990,9 +990,26 @@
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
+  margin-top: 4px !important;
+  margin-bottom: 7px !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
   box-sizing: border-box !important;
+}
+
+/* 여백 담당 래퍼 — 패딩이 곧 패널 양옆 여백. 세로 패딩은 0이라
+   패널이 접혀 있어도(빈 상태) 눈에 보이는 틈이 생기지 않는다. */
+#rm_extensions_block .se-panel-inset {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 8px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-sizing: border-box !important;
+  overflow: visible;
 }
 
 /* 디버그 툴바 버튼 & 리포트 모달 */
