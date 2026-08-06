@@ -713,6 +713,36 @@
   box-sizing: border-box !important;
 }
 
+/* 일부 확장이 자기 설정 패널에 position:absolute / transform / 음수 마진을 걸어
+   네이티브 레이아웃 기준으로 풀블리드를 만드는데, 심플 확장 컨테이너 안에서는
+   패널이 왼쪽으로 밀려 짤린다. 패널 계층 전체를 일반 흐름으로 되돌린다. */
+#rm_extensions_block .se-native-unit {
+  position: relative !important;
+}
+
+#rm_extensions_block .se-native-unit .se-native-content-shell,
+#rm_extensions_block .se-native-unit .se-native-fixed-drawer,
+#rm_extensions_block .se-native-unit .se-native-fixed-content,
+#rm_extensions_block .se-native-unit .se-native-primary-content,
+#rm_extensions_block .se-native-unit .inline-drawer-content {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  float: none !important;
+}
+
+#rm_extensions_block .se-native-unit .se-native-fixed-content > *,
+#rm_extensions_block .se-native-unit--open .se-native-primary-content > * {
+  transform: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 .se-native-movebar {
   display: flex;
   align-items: center;

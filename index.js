@@ -432,6 +432,29 @@ function findPrimaryToggle(element) {
       // Ignore unsupported :scope selectors on older Android WebViews.
     }
   }
+
+  // Fallback: some extensions (e.g. custom translators) build their own
+  // header row without ST's inline-drawer classes. Use the chevron icon if
+  // present (clicks bubble up to the row's own handler), else the title.
+  const title = findTitleElement(element);
+  if (
+    title &&
+    !title.closest(
+      ".inline-drawer-content, .se-native-primary-content, .se-native-fixed-content, .se-fixed-extension-header",
+    )
+  ) {
+    const icon = [
+      ...element.querySelectorAll(
+        '.inline-drawer-icon, [class*="chevron" i]',
+      ),
+    ].find(
+      (node) =>
+        !node.closest(
+          ".inline-drawer-content, .se-fixed-extension-header, .se-native-movebar",
+        ),
+    );
+    return icon || title;
+  }
   return null;
 }
 
@@ -475,7 +498,11 @@ function findPillHeader(unit, toggle) {
   if (
     common &&
     common !== unit.element &&
-    (!content || !common.contains(content))
+    (content
+      ? !common.contains(content)
+      : // No ST drawer content found — only treat the wrapper as a header if
+        // it clearly holds no settings, so we never hide a custom panel.
+        !common.querySelector("input, select, textarea, .inline-drawer-content"))
   ) {
     return common;
   }
