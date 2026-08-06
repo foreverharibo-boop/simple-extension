@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.24 debug report`];
+  const lines = [`[simple extension] v0.7.25 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1196,6 +1196,12 @@ function flattenClosedElement(node, depth = 0) {
   style.setProperty("border-top-width", "0", "important");
   style.setProperty("border-bottom-width", "0", "important");
   style.setProperty("min-height", "0", "important");
+  // 마진/패딩만으로는 못 잡는 경우: 확장이 명시적 height(px)로 항상
+  // 보이는 요소를 만들면 접힌 상태에서도 그 높이만큼 삐져나온다.
+  // 접힌 유닛의 자식은 실제 높이(px)와 overflow까지 강제로 눌러 감춘다.
+  style.setProperty("height", "0", "important");
+  style.setProperty("max-height", "0", "important");
+  style.setProperty("overflow", "hidden", "important");
   [...node.children].forEach((child) => {
     if (!(child instanceof HTMLElement)) return;
     // 패널 본체의 세로 박스는 enforceContentBox가 열림/접힘에 따라 관리
@@ -1679,7 +1685,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.24 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.25 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1701,7 +1707,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.24 debug dump`];
+  const lines = [`[simple extension] v0.7.25 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
