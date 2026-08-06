@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.9 debug report`];
+  const lines = [`[simple extension] v0.7.11 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -334,6 +334,13 @@ function buildDebugReport() {
     [...document.body.querySelectorAll("*")].some((node) => {
       if (!(node instanceof HTMLElement)) return false;
       if (state.ui.contains(node) || node.closest(".se-debug-modal"))
+        return false;
+      // 실리태번 페이지 뼈대(채팅창, 서랍, 상단바)는 정상 UI — 오탐 제거
+      if (
+        node.closest(
+          "#sheld, #form_sheld, #send_form, #top-settings-holder, #top-bar",
+        )
+      )
         return false;
       const rect = node.getBoundingClientRect();
       if (!rect.width || rect.height < 30) return false;
@@ -1450,7 +1457,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.9 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.11 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1472,7 +1479,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.9 debug dump`];
+  const lines = [`[simple extension] v0.7.11 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

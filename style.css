@@ -1104,6 +1104,18 @@
   margin-bottom: 0 !important;
 }
 
+/* ST 기본 확장은 유닛과 드로어 사이에 래퍼가 한 겹 더 있고, 그 래퍼가
+   ST 기본 CSS의 세로 마진/패딩을 갖고 있어 알약 간격이 벌어진다.
+   래퍼(콘텐츠 셸)와 모든 깊이의 드로어에서 세로 여백을 제거한다.
+   패널 자체의 세로 여백은 enforceContentBox가 인라인으로 관리한다. */
+#rm_extensions_block .se-native-unit .se-native-content-shell,
+#rm_extensions_block .se-native-unit .inline-drawer {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 #rm_extensions_block .se-native-unit--open .se-native-primary-content {
   margin-top: 4px !important;
   margin-bottom: 7px !important;
