@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.30 debug report`];
+  const lines = [`[simple extension] v0.7.31 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1271,7 +1271,14 @@ function flattenClosedElement(node, depth = 0) {
   const holdsRealContent =
     node.classList.contains("se-native-primary-content") ||
     node.classList.contains("se-panel-inset") ||
-    node.querySelector(".se-native-primary-content, .se-panel-inset");
+    node.querySelector(".se-native-primary-content, .se-panel-inset") ||
+    // 중첩 서브 드로어(.inline-drawer)와 그 SE 서브알약 헤더는 정상적인
+    // 펼침 대상이다. height:0으로 눌러버리면 서브알약이 화면에서 사라져
+    // (예: "이미지 생성 ?" 안의 "이미지 프롬프트 템플릿") 클릭해도 아무것도
+    // 안 뜬다. 이런 노드는 flatten에서 제외한다.
+    node.classList.contains("inline-drawer") ||
+    node.classList.contains("se-fixed-subdrawer-header") ||
+    node.querySelector(".inline-drawer, .se-fixed-subdrawer-header");
   if (!holdsRealContent) {
     style.setProperty("height", "0", "important");
     style.setProperty("max-height", "0", "important");
@@ -1281,6 +1288,13 @@ function flattenClosedElement(node, depth = 0) {
     if (!(child instanceof HTMLElement)) return;
     // 패널 본체의 세로 박스는 enforceContentBox가 열림/접힘에 따라 관리
     if (child.classList.contains("se-native-primary-content")) return;
+    // 서브 드로어와 그 서브알약 헤더는 정상 펼침 대상 — 건드리지 않는다.
+    if (
+      child.classList.contains("inline-drawer") ||
+      child.classList.contains("se-fixed-subdrawer-header") ||
+      child.querySelector(".inline-drawer, .se-fixed-subdrawer-header")
+    )
+      return;
     const rect = child.getBoundingClientRect();
     const computed = getComputedStyle(child);
     if (
@@ -1780,7 +1794,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.30 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.31 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1802,7 +1816,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.30 debug dump`];
+  const lines = [`[simple extension] v0.7.31 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

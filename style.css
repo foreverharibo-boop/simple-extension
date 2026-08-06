@@ -616,6 +616,24 @@
   margin: 4px 0 !important;
 }
 
+/* 서브 드로어(중첩 .inline-drawer)와 그 서브알약 헤더는 유닛이 접혀 있어도
+   항상 보여야 한다 (예: "이미지 생성 ?" 안의 "이미지 프롬프트 템플릿").
+   flatten 로직이 어쩌다 눌러도 CSS로 최소 높이를 되살린다. */
+#rm_extensions_block .se-native-unit .se-fixed-subdrawer-header {
+  display: flex !important;
+  height: auto !important;
+  min-height: 34px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+#rm_extensions_block .se-native-unit > .inline-drawer,
+#rm_extensions_block .se-native-unit .se-native-primary-content > .inline-drawer {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
 .se-fixed-extension-name {
   min-width: 0;
   overflow: hidden;
