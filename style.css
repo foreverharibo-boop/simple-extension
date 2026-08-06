@@ -992,6 +992,7 @@
   }
   .se-extension-list {
     flex-direction: column;
+    gap: 4px;
   }
   .se-ext-col {
     width: 100%;
