@@ -305,7 +305,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.33 debug report`];
+  const lines = [`[simple extension] v0.7.36 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -336,24 +336,6 @@ function buildDebugReport() {
     );
   });
   if (!extras) lines.push("  (전부 정상 — 간격 균일)");
-  lines.push("");
-  lines.push("===== 짝(row-pair) 구조 점검 (이상 있는 것만) =====");
-  let pairIssues = 0;
-  state.nativeUnits.forEach((unit) => {
-    if (!unit.element.isConnected) return;
-    const pair = unit.element.closest(".se-row-pair");
-    const siblingCount = pair ? pair.querySelectorAll(".se-native-unit").length : 0;
-    const isOpenClass = unit.element.classList.contains("se-native-unit--open");
-    const selfFlag = unit.element.dataset.seSelfOpen === "true";
-    const pairOpenClass = pair?.classList.contains("se-row-pair--open");
-    if (siblingCount === 1 || isOpenClass || selfFlag || pairOpenClass) {
-      pairIssues += 1;
-      lines.push(
-        `  ${unit.title}: 짝인원 ${siblingCount || "짝없음"} / open클래스 ${isOpenClass} / self-open플래그 ${selfFlag} / pair--open ${Boolean(pairOpenClass)}`,
-      );
-    }
-  });
-  if (!pairIssues) lines.push("  (전부 정상 — 짝 구조 이상 없음)");
   lines.push("");
   lines.push("===== 서브 드로어 점검 (중첩 inline-drawer 보유 유닛) =====");
   let subFound = 0;
@@ -837,14 +819,8 @@ function updateNativeOpenState(unit) {
   unit.element.classList.toggle("se-native-unit--open", isOpen);
   unit.fixedHeader?.classList.toggle("is-open", isOpen);
   unit.fixedHeader?.setAttribute("aria-expanded", String(isOpen));
-  const pair = unit.element.closest(".se-row-pair");
-  if (pair) {
-    const anyOpen = [...pair.children].some((child) =>
-      child.classList.contains("se-native-unit--open"),
-    );
-    pair.classList.toggle("se-row-pair--open", anyOpen);
-  }
 }
+
 
 function markNativeContentShell(unit) {
   const content = findPrimaryContent(unit);
@@ -1353,13 +1329,12 @@ function sweepListStrays() {
   // 사이에 그리드 한 줄을 차지해 간격을 벌린다. 유닛이 아닌 리스트
   // 자식은 전부 숨긴다 (display:none은 그리드 줄을 만들지 않는다).
   state.ui
-    ?.querySelectorAll(".se-extension-list, .se-row-pair, .se-folder-content")
+    ?.querySelectorAll(".se-extension-list, .se-folder-content")
     .forEach((container) => {
       [...container.children].forEach((child) => {
         if (!(child instanceof HTMLElement)) return;
         if (
           child.classList.contains("se-native-unit") ||
-          child.classList.contains("se-row-pair") ||
           child.classList.contains("se-empty") ||
           child.dataset.seListStray
         )
@@ -1609,26 +1584,18 @@ function render() {
   all.append(allTitle);
   const list = document.createElement("div");
   list.className = "se-extension-list";
-  for (let index = 0; index < unassigned.length; index += 2) {
-    const pair = document.createElement("div");
-    pair.className = "se-row-pair";
-    try {
-      pair.append(prepareNativeUnit(unassigned[index]));
-    } catch (error) {
-      recordDebugError(`prepareNativeUnit(${unassigned[index]?.title})`, error);
-    }
-    if (unassigned[index + 1]) {
+  const prepared = unassigned
+    .map((unit) => {
       try {
-        pair.append(prepareNativeUnit(unassigned[index + 1]));
+        return prepareNativeUnit(unit);
       } catch (error) {
-        recordDebugError(
-          `prepareNativeUnit(${unassigned[index + 1]?.title})`,
-          error,
-        );
+        recordDebugError(`prepareNativeUnit(${unit?.title})`, error);
+        return null;
       }
-    }
-    list.append(pair);
-  }
+    })
+    .filter(Boolean);
+
+  prepared.forEach((el) => list.append(el));
   if (!state.nativeUnits.size) {
     const empty = document.createElement("div");
     empty.className = "se-empty";
@@ -1794,7 +1761,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.33 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.36 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1816,7 +1783,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.33 debug dump`];
+  const lines = [`[simple extension] v0.7.36 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
