@@ -1084,3 +1084,14 @@
   font-size: 0.8rem;
   cursor: pointer;
 }
+
+/* 모든 표준 패널을 알약보다 살짝 안쪽으로 (양옆 8px 여백) — 스타일시트 끝에
+   두어 앞선 width:100% 그룹 규칙을 같은 명시도에서 이긴다. */
+#rm_extensions_block .se-native-unit .inline-drawer-content,
+#rm_extensions_block .se-native-unit .se-native-fixed-content,
+#rm_extensions_block .se-native-unit .se-native-primary-content {
+  width: calc(100% - 16px) !important;
+  max-width: calc(100% - 16px) !important;
+  margin: 4px 8px 7px !important;
+  padding: 9px !important;
+}

@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.7 debug report`];
+  const lines = [`[simple extension] v0.7.8 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -671,6 +671,21 @@ function updateDrawerOpenState(toggle, content, fixed) {
   fixed.classList.toggle("is-open", isOpen);
   fixed.setAttribute("aria-expanded", String(isOpen));
   toggle?.setAttribute("aria-expanded", String(isOpen));
+}
+
+function enforceContentBox(unit) {
+  // 일부 확장(#tua-settings, #mma-settings-block 등)이 ID 셀렉터 CSS로
+  // 패널 패딩/폭을 덮어써서 여백이 사라진다. 인라인 !important는
+  // 명시도 싸움이 없으므로 어떤 CSS보다 우선한다. display는 건드리지
+  // 않아 접힘/펼침 동작은 그대로 유지된다.
+  const content = findPrimaryContent(unit);
+  if (!content) return;
+  const style = content.style;
+  style.setProperty("width", "calc(100% - 16px)", "important");
+  style.setProperty("max-width", "calc(100% - 16px)", "important");
+  style.setProperty("margin", "4px 8px 7px", "important");
+  style.setProperty("padding", "9px", "important");
+  style.setProperty("box-sizing", "border-box", "important");
 }
 
 function updateNativeOpenState(unit) {
@@ -1087,6 +1102,11 @@ function normalizeAllNativeUnits() {
         recordDebugError(`normalize(${unit.title})`, error);
       }
       try {
+        enforceContentBox(unit);
+      } catch (error) {
+        recordDebugError(`contentBox(${unit.title})`, error);
+      }
+      try {
         forceHideCustomHeader(unit);
       } catch (error) {
         recordDebugError(`hideHeader(${unit.title})`, error);
@@ -1425,7 +1445,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.7 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.8 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1447,7 +1467,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.7 debug dump`];
+  const lines = [`[simple extension] v0.7.8 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
