@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.39 debug report`];
+  const lines = [`[simple extension] v0.7.40 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1333,12 +1333,13 @@ function sweepListStrays() {
   // 사이에 그리드 한 줄을 차지해 간격을 벌린다. 유닛이 아닌 리스트
   // 자식은 전부 숨긴다 (display:none은 그리드 줄을 만들지 않는다).
   state.ui
-    ?.querySelectorAll(".se-extension-list, .se-folder-content")
+    ?.querySelectorAll(".se-extension-list, .se-ext-col, .se-folder-content")
     .forEach((container) => {
       [...container.children].forEach((child) => {
         if (!(child instanceof HTMLElement)) return;
         if (
           child.classList.contains("se-native-unit") ||
+          child.classList.contains("se-ext-col") ||
           child.classList.contains("se-empty") ||
           child.dataset.seListStray
         )
@@ -1599,7 +1600,15 @@ function render() {
     })
     .filter(Boolean);
 
-  prepared.forEach((el) => list.append(el));
+  const colLeft = document.createElement("div");
+  colLeft.className = "se-ext-col";
+  const colRight = document.createElement("div");
+  colRight.className = "se-ext-col";
+  const half = Math.ceil(prepared.length / 2);
+  prepared.forEach((el, i) => {
+    (i < half ? colLeft : colRight).append(el);
+  });
+  list.append(colLeft, colRight);
   if (!state.nativeUnits.size) {
     const empty = document.createElement("div");
     empty.className = "se-empty";
@@ -1765,7 +1774,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.39 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.40 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1787,7 +1796,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.39 debug dump`];
+  const lines = [`[simple extension] v0.7.40 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
