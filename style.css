@@ -526,6 +526,7 @@
 .se-extension-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense;
   gap: 4px 7px;
 }
 
@@ -572,7 +573,9 @@
   display: flex !important;
   width: 100% !important;
   max-width: 100% !important;
-  min-height: 34px;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
   align-items: center;
   gap: 6px;
   margin: 0 !important;
@@ -589,6 +592,10 @@
   text-align: left;
   cursor: pointer;
   box-sizing: border-box;
+}
+
+.se-fixed-extension-header * {
+  max-height: 100%;
 }
 
 .se-fixed-subdrawer-header {
