@@ -304,27 +304,32 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.13 debug report`];
+  const lines = [`[simple extension] v0.7.14 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
   );
   (state.debugErrors || []).forEach((message) => lines.push(`  - ${message}`));
   lines.push("");
-  lines.push("===== 유닛 높이 요약 (유닛높이 - 알약높이, +3px 이상만) =====");
+  lines.push("===== 유닛 높이/마진 요약 (이상 있는 것만) =====");
   let extras = 0;
   state.nativeUnits.forEach((unit) => {
     if (!unit.element.isConnected) return;
     const pillRect = unit.fixedHeader?.getBoundingClientRect();
     const rect = unit.element.getBoundingClientRect();
     if (!pillRect?.height || !rect.height) return;
+    const computed = getComputedStyle(unit.element);
+    const marginTop = Math.round(parseFloat(computed.marginTop) || 0);
+    const marginBottom = Math.round(parseFloat(computed.marginBottom) || 0);
     const extra = Math.round(rect.height - pillRect.height);
-    if (extra < 3) return;
+    if (extra < 3 && !marginTop && !marginBottom) return;
     extras += 1;
     const open = unit.element.classList.contains("se-native-unit--open");
-    lines.push(`  ${unit.title}: +${extra}px${open ? " (열림-정상)" : ""}`);
+    lines.push(
+      `  ${unit.title}: 높이+${extra}px 마진 ${marginTop}/${marginBottom}px${open ? " (열림-정상)" : ""}`,
+    );
   });
-  if (!extras) lines.push("  (전부 알약 높이와 일치 — 간격 균일)");
+  if (!extras) lines.push("  (전부 정상 — 간격 균일)");
   lines.push("");
   lines.push(
     `===== 리스트에서 숨긴 유령 요소 (${state.listStrays?.length || 0}건) =====`,
@@ -1219,6 +1224,10 @@ function normalizeAllNativeUnits() {
         header?.classList.add("se-native-primary-toggle");
         const pillHeader = header ? findPillHeader(unit, header) : null;
         ensureFixedHeader(unit, header, pillHeader);
+        // 유닛 바깥 마진은 rect 높이에 안 잡혀 측정을 전부 통과하는데,
+        // ST 코어가 기본 확장 컨테이너를 ID 셀렉터(+!important)로
+        // 스타일링해 클래스 기반 margin:0을 이긴다. 인라인으로 제압.
+        unit.element.style.setProperty("margin", "0", "important");
         markNativeContentShell(unit);
         markCustomPanels(unit);
         normalizeNativeDrawers(unit);
@@ -1579,7 +1588,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.13 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.14 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1601,7 +1610,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.13 debug dump`];
+  const lines = [`[simple extension] v0.7.14 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
