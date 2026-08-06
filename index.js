@@ -304,7 +304,12 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.5 debug report`];
+  const lines = [`[simple extension] v0.7.6 debug report`];
+  lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
+  lines.push(
+    `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
+  );
+  (state.debugErrors || []).forEach((message) => lines.push(`  - ${message}`));
   const uiRect = state.ui?.getBoundingClientRect();
 
   state.nativeUnits.forEach((unit) => {
@@ -954,6 +959,7 @@ function alignOutermostOffenders(node, pillRect, depth = 0) {
   const overLeft = pillRect.left - rect.left; // >0: 알약보다 왼쪽으로 삐져나감
   const overRight = rect.right - pillRect.right; // >0: 오른쪽으로 삐져나감
   if (overLeft > 1 || overRight > 1) {
+    state.alignCount = (state.alignCount || 0) + 1;
     const currentMargin =
       parseFloat(getComputedStyle(node).marginLeft) || 0;
     const style = node.style;
@@ -1029,27 +1035,59 @@ function forceAlignToPill(unit) {
   });
 }
 
+function recordDebugError(scope, error) {
+  state.debugErrors = state.debugErrors || [];
+  const message = `${scope}: ${error?.message || error}`;
+  if (state.debugErrors.at(-1) !== message) state.debugErrors.push(message);
+  if (state.debugErrors.length > 20) state.debugErrors.shift();
+}
+
 function normalizeAllNativeUnits() {
   if (state.normalizing || state.rendering) return;
   state.normalizing = true;
   try {
     state.nativeUnits.forEach((unit) => {
       if (!state.ui?.contains(unit.element)) return;
-      const header = findPrimaryToggle(unit.element);
-      unit.primaryToggle = header;
-      unit.primaryContent = null;
-      header?.classList.add("se-native-primary-toggle");
-      const pillHeader = header ? findPillHeader(unit, header) : null;
-      ensureFixedHeader(unit, header, pillHeader);
-      markNativeContentShell(unit);
-      markCustomPanels(unit);
-      normalizeNativeDrawers(unit);
-      forceHideCustomHeader(unit);
-      clampOverflowingDescendants(unit);
-      forceAlignToPill(unit);
-      updateNativeOpenState(unit);
+      // 유닛 하나에서 에러가 나도 나머지 유닛 처리는 계속되도록 단계별 격리
+      try {
+        const header = findPrimaryToggle(unit.element);
+        unit.primaryToggle = header;
+        unit.primaryContent = null;
+        header?.classList.add("se-native-primary-toggle");
+        const pillHeader = header ? findPillHeader(unit, header) : null;
+        ensureFixedHeader(unit, header, pillHeader);
+        markNativeContentShell(unit);
+        markCustomPanels(unit);
+        normalizeNativeDrawers(unit);
+      } catch (error) {
+        recordDebugError(`normalize(${unit.title})`, error);
+      }
+      try {
+        forceHideCustomHeader(unit);
+      } catch (error) {
+        recordDebugError(`hideHeader(${unit.title})`, error);
+      }
+      try {
+        clampOverflowingDescendants(unit);
+      } catch (error) {
+        recordDebugError(`clamp(${unit.title})`, error);
+      }
+      try {
+        forceAlignToPill(unit);
+      } catch (error) {
+        recordDebugError(`align(${unit.title})`, error);
+      }
+      try {
+        updateNativeOpenState(unit);
+      } catch (error) {
+        recordDebugError(`openState(${unit.title})`, error);
+      }
     });
-    containStrayPanels();
+    try {
+      containStrayPanels();
+    } catch (error) {
+      recordDebugError("strayPanels", error);
+    }
   } finally {
     state.normalizing = false;
   }
@@ -1363,7 +1401,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.5 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.6 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1385,7 +1423,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.5 debug dump`];
+  const lines = [`[simple extension] v0.7.6 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
