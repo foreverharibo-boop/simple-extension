@@ -109,13 +109,16 @@
 
 #rm_extensions_block .se-native-topbar .checkbox_label,
 #rm_extensions_block .se-native-topbar .menu_button {
-  min-height: 38px;
+  min-height: 28px;
   margin: 0 !important;
+  padding: 3px 6px !important;
   border: 1px solid var(--se-border) !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   color: var(--se-text) !important;
   background: var(--se-surface) !important;
   box-shadow: none !important;
+  font-size: 0.68rem !important;
+  white-space: nowrap;
 }
 
 #rm_extensions_block .se-native-topbar .checkbox_label {
@@ -123,9 +126,7 @@
   width: max-content;
   max-width: 100%;
   min-width: 0;
-  padding: 6px 7px;
   text-align: center;
-  font-size: 0.76rem;
 }
 
 #rm_extensions_block .se-native-topbar #extensions_details {
@@ -140,7 +141,10 @@
 
 #rm_extensions_block .se-native-topbar input[type="checkbox"] {
   flex: 0 0 auto;
-  margin: 0 4px 0 0 !important;
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  margin: 0 3px 0 0 !important;
   accent-color: var(--se-accent);
 }
 
@@ -148,7 +152,7 @@
   min-width: 0;
   line-height: 1.2;
   text-align: center;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 #simple-extension-ui {
