@@ -1195,3 +1195,19 @@
   border: 0 !important;
   overflow: hidden !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   테마 가상요소 주입 차단 (Theme pseudo-element guard)
+   ───────────────────────────────────────────────────────────
+   일부 ST 테마가 [title] 속성값을 ::before/::after로 강제 출력해서
+   버튼 라벨이 두 번 찍히는 문제를 막는다.
+   폰트어썸 아이콘(.fa-* 계열)은 ::before로 글리프를 그리므로 예외.
+   ═══════════════════════════════════════════════════════════ */
+#rm_extensions_block .se-native-topbar *:not([class*="fa-"])::before,
+#rm_extensions_block .se-native-topbar *:not([class*="fa-"])::after,
+#rm_extensions_block .se-native-unit *:not([class*="fa-"])::before,
+#rm_extensions_block .se-native-unit *:not([class*="fa-"])::after,
+#simple-extension-ui *:not([class*="fa-"])::before,
+#simple-extension-ui *:not([class*="fa-"])::after {
+  content: none !important;
+}
