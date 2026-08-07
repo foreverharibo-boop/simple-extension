@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.44 debug report`];
+  const lines = [`[simple extension] v0.7.45 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1595,22 +1595,7 @@ function render() {
   state.ui.replaceChildren();
   state.ui.append(makeThemePicker(), createToolbar());
 
-  const folders = document.createElement("div");
-  folders.className = "se-folders";
-  folders.append(createSectionTitle("내 폴더", "+ 폴더 추가", addFolder));
-  state.settings.folders.forEach((folder) =>
-    folders.append(makeFolder(folder)),
-  );
-  state.ui.append(folders);
-
-  const validFolderIds = new Set(
-    state.settings.folders.map((folder) => folder.id),
-  );
-  const unassigned = sortUnits(
-    [...state.nativeUnits.values()].filter(
-      (unit) => !validFolderIds.has(state.settings.assignments[unit.key]),
-    ),
-  );
+  const unassigned = sortUnits([...state.nativeUnits.values()]);
   const all = document.createElement("div");
   all.className = "se-all-extensions";
   const allTitle = createSectionTitle("전체 확장");
@@ -1803,7 +1788,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.44 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.45 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1825,7 +1810,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.44 debug dump`];
+  const lines = [`[simple extension] v0.7.45 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
