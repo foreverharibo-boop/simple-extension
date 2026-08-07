@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.41 debug report`];
+  const lines = [`[simple extension] v0.7.44 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -380,6 +380,35 @@ function buildDebugReport() {
   );
   (state.listStrays || []).forEach((entry) => lines.push(`  ${entry}`));
   if (!state.listStrays?.length) lines.push("  (없음)");
+  lines.push("");
+  lines.push("===== 체크박스 점검 =====");
+  const topbarCb = document.querySelectorAll(
+    '#rm_extensions_block .se-native-topbar input[type="checkbox"]',
+  );
+  lines.push(`  상단바 체크박스: ${topbarCb.length}개`);
+  topbarCb.forEach((cb, i) => {
+    const r = cb.getBoundingClientRect();
+    const cs = getComputedStyle(cb);
+    lines.push(
+      `    #${i + 1} checked:${cb.checked} size:${Math.round(r.width)}x${Math.round(r.height)} opacity:${cs.opacity} appearance:${cs.appearance} accent:${cs.accentColor}`,
+    );
+  });
+  let openUnitCb = 0;
+  state.nativeUnits.forEach((unit) => {
+    if (!unit.element.classList.contains("se-native-unit--open")) return;
+    unit.element
+      .querySelectorAll('input[type="checkbox"]')
+      .forEach((cb) => {
+        const r = cb.getBoundingClientRect();
+        if (openUnitCb < 6) {
+          lines.push(
+            `    [열림:${unit.title}] checked:${cb.checked} size:${Math.round(r.width)}x${Math.round(r.height)} opacity:${getComputedStyle(cb).opacity}`,
+          );
+        }
+        openUnitCb += 1;
+      });
+  });
+  if (!openUnitCb) lines.push("  (펼쳐진 유닛의 체크박스 없음)");
   lines.push("");
   lines.push("===== 리스트 그리드 아이템 순서 덤프 =====");
   state.ui
@@ -1774,7 +1803,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.41 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.44 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1796,7 +1825,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.41 debug dump`];
+  const lines = [`[simple extension] v0.7.44 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);

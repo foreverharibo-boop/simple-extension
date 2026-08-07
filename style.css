@@ -1196,18 +1196,26 @@
   overflow: hidden !important;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   테마 가상요소 주입 차단 (Theme pseudo-element guard)
-   ───────────────────────────────────────────────────────────
-   일부 ST 테마가 [title] 속성값을 ::before/::after로 강제 출력해서
-   버튼 라벨이 두 번 찍히는 문제를 막는다.
-   폰트어썸 아이콘(.fa-* 계열)은 ::before로 글리프를 그리므로 예외.
-   ═══════════════════════════════════════════════════════════ */
-#rm_extensions_block .se-native-topbar *:not([class*="fa-"])::before,
-#rm_extensions_block .se-native-topbar *:not([class*="fa-"])::after,
-#rm_extensions_block .se-native-unit *:not([class*="fa-"])::before,
-#rm_extensions_block .se-native-unit *:not([class*="fa-"])::after,
-#simple-extension-ui *:not([class*="fa-"])::before,
-#simple-extension-ui *:not([class*="fa-"])::after {
-  content: none !important;
+/* ST 체크박스는 appearance:none + ::before(clip-path 체크마크)를 scale로
+   보이는 완전 커스텀 방식. 체크마크가 안 뜨던 건, SE가 콘텐츠 하위에 건
+   transform:none !important가 ::before의 scale(1)까지 덮어써 체크마크를
+   0 크기로 눌렀기 때문. ST 원본 렌더링을 그대로 되살린다. */
+#rm_extensions_block .se-native-unit input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  opacity: 1 !important;
+  filter: brightness(1.2) !important;
+  display: grid !important;
+  place-content: center !important;
+  overflow: hidden !important;
+}
+
+#rm_extensions_block .se-native-unit input[type="checkbox"]::before {
+  transform: scale(0) !important;
+  transform-origin: bottom left !important;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%) !important;
+}
+
+#rm_extensions_block .se-native-unit input[type="checkbox"]:checked::before {
+  transform: scale(1) !important;
 }
