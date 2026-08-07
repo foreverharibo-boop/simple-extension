@@ -1187,3 +1187,13 @@
 #rm_extensions_block .se-native-unit input[type="checkbox"]:checked::before {
   transform: scale(1) !important;
 }
+
+/* 일부 테마가 상단바 버튼에 ::before/::after로 i18n 텍스트를 하나 더 끼워넣어
+   원래 라벨과 겹쳐 두 번 보이는 문제. 그 가짜 텍스트를 눌러버린다. */
+#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button)::before,
+#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button)::after,
+#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) span::before,
+#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) span::after {
+  content: none !important;
+  display: none !important;
+}
