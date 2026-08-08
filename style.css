@@ -902,6 +902,28 @@
 }
 
 @media (max-width: 700px) {
+  /* 모바일 전용, 테마 불문. 일부 테마가 상단바 버튼의 ::before/::after(버튼
+     자체 또는 그 안 span/i/label)에 i18n 텍스트를 하나 더 끼워넣어 글씨가
+     두 번 겹쳐 보인다. 그 가짜 pseudo 텍스트를 전부 제거한다. 진짜 라벨은
+     span 실제 텍스트 노드라 영향 없다. (웹은 이 블록 밖이라 안 건드림) */
+  #rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button)::before,
+  #rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button)::after,
+  #rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) *::before,
+  #rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) *::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  /* 진짜 라벨(span)은 항상 한 줄로 보이게 */
+  #rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) span {
+    display: inline !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+  }
+
   #rm_extensions_block .se-native-topbar {
     justify-content: flex-start !important;
     gap: 4px !important;
