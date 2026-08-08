@@ -111,18 +111,18 @@
 #rm_extensions_block .se-native-topbar .menu_button {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   width: max-content !important;
   max-width: 100%;
-  min-height: 30px;
+  min-height: 26px;
   margin: 0 !important;
-  padding: 5px 11px !important;
+  padding: 3px 9px !important;
   border: 1px solid var(--se-border) !important;
   border-radius: 999px !important;
   color: var(--se-text) !important;
   background: var(--se-surface) !important;
   box-shadow: none !important;
-  font-size: 0.8rem !important;
+  font-size: 0.72rem !important;
   white-space: nowrap;
 }
 
@@ -917,28 +917,27 @@
     width: max-content !important;
     max-width: 100% !important;
     min-width: 0;
-    min-height: 29px;
-    height: 29px;
-    gap: 2px;
-    padding: 2px 3px !important;
-    overflow: hidden;
-    border-radius: 7px !important;
+    min-height: 26px;
+    gap: 3px;
+    padding: 3px 8px !important;
+    overflow: visible;
+    border-radius: 999px !important;
     justify-content: flex-start !important;
     text-align: left !important;
     white-space: nowrap;
-    font-size: 9px !important;
-    line-height: 1;
+    font-size: 0.68rem !important;
+    line-height: 1.1;
   }
 
   #rm_extensions_block
     .se-native-topbar
     :is(.checkbox_label, .menu_button)
     span {
-    overflow: hidden;
-    font-size: 9px !important;
+    overflow: visible;
+    font-size: 0.68rem !important;
     font-weight: 400 !important;
-    line-height: 1;
-    letter-spacing: -0.2px;
+    line-height: 1.1;
+    letter-spacing: -0.1px;
     text-align: left !important;
     text-overflow: clip;
     white-space: nowrap;
