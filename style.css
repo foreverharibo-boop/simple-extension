@@ -927,7 +927,7 @@
   #rm_extensions_block .se-native-topbar {
     justify-content: flex-start !important;
     gap: 4px !important;
-    padding: 7px !important;
+    padding: 7px 52px 7px 7px !important;
   }
 
   #rm_extensions_block .se-native-topbar h3 {
@@ -939,15 +939,15 @@
     width: max-content !important;
     max-width: 100% !important;
     min-width: 0;
-    min-height: 26px;
-    gap: 3px;
-    padding: 3px 8px !important;
+    min-height: 22px;
+    gap: 2px;
+    padding: 2px 7px !important;
     overflow: visible;
     border-radius: 999px !important;
     justify-content: flex-start !important;
     text-align: left !important;
     white-space: nowrap;
-    font-size: 0.68rem !important;
+    font-size: 0.6rem !important;
     line-height: 1.1;
   }
 
@@ -956,7 +956,7 @@
     :is(.checkbox_label, .menu_button)
     span {
     overflow: visible;
-    font-size: 0.68rem !important;
+    font-size: 0.6rem !important;
     font-weight: 400 !important;
     line-height: 1.1;
     letter-spacing: -0.1px;
