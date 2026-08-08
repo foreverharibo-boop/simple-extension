@@ -109,33 +109,32 @@
 
 #rm_extensions_block .se-native-topbar .checkbox_label,
 #rm_extensions_block .se-native-topbar .menu_button {
-  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: max-content !important;
+  max-width: 100%;
+  min-height: 30px;
   margin: 0 !important;
-  padding: 3px 6px !important;
+  padding: 5px 11px !important;
   border: 1px solid var(--se-border) !important;
-  border-radius: 8px !important;
+  border-radius: 999px !important;
   color: var(--se-text) !important;
   background: var(--se-surface) !important;
   box-shadow: none !important;
-  font-size: 0.68rem !important;
+  font-size: 0.8rem !important;
   white-space: nowrap;
 }
 
 #rm_extensions_block .se-native-topbar .checkbox_label {
   justify-content: flex-start;
-  width: max-content;
-  max-width: 100%;
   min-width: 0;
-  text-align: center;
+  text-align: left;
 }
 
-#rm_extensions_block .se-native-topbar #extensions_details {
-  width: max-content;
-  max-width: 100%;
-}
-
+#rm_extensions_block .se-native-topbar #extensions_details,
 #rm_extensions_block .se-native-topbar #third_party_extension_button {
-  width: max-content;
+  width: max-content !important;
   max-width: 100%;
 }
 
@@ -151,7 +150,9 @@
 #rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) span {
   min-width: 0;
   line-height: 1.2;
-  text-align: center;
+  overflow: visible;
+  text-align: left;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -1192,12 +1193,11 @@
   transform: scale(1) !important;
 }
 
-/* 일부 테마가 상단바 버튼에 ::before/::after로 i18n 텍스트를 하나 더 끼워넣어
-   원래 라벨과 겹쳐 두 번 보이는 문제. 그 가짜 텍스트를 눌러버린다. */
-#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button)::before,
-#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button)::after,
-#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) span::before,
-#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) span::after {
-  content: none !important;
-  display: none !important;
+/* 상단바 버튼 라벨은 항상 보이게 한다. (이전에 테마 중복 텍스트를 잡으려
+   ::before/::after content:none을 걸었더니, 라벨을 pseudo로 넣는 테마에서는
+   진짜 글씨까지 사라져 아이콘만 남는 문제가 생겨 롤백함) */
+#rm_extensions_block .se-native-topbar :is(.checkbox_label, .menu_button) span {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
 }
