@@ -46,6 +46,7 @@ const state = {
   originalIndex: 0,
   rendering: false,
   normalizing: false,
+  centerShift: 0,
 };
 
 function clone(value) {
@@ -304,9 +305,10 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.60 debug report`];
+  const lines = [`[simple extension] v0.7.61 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(`중앙정렬 강제 실행 횟수: ${state.centerCount || 0}`);
+  lines.push(`전체 블록 중앙 보정 이동량: ${state.centerShift || 0}px`);
   lines.push("");
   lines.push("===== 중앙정렬 진단 (각 층의 좌우 위치/여백) =====");
   {
@@ -1788,6 +1790,19 @@ function consolidateLegacyExtrasApi() {
   if (hr?.tagName === "HR") hr.remove();
 }
 
+function calculateCenterShift(panelRect, blockRect, previousShift = 0) {
+  if (!panelRect?.width || !blockRect?.width) return previousShift;
+  const panelCenter = (panelRect.left + panelRect.right) / 2;
+  const blockCenter = (blockRect.left + blockRect.right) / 2;
+  const correction = panelCenter - blockCenter;
+  const limit = Math.min(64, panelRect.width / 4);
+  const next = Math.max(
+    -limit,
+    Math.min(limit, Number(previousShift || 0) + correction),
+  );
+  return Math.abs(next) < 0.25 ? 0 : Math.round(next * 100) / 100;
+}
+
 function enforceCentering() {
   state.centerCount = (state.centerCount || 0) + 1;
   // 스샷 확인 결과 왼쪽 치우침의 실체는 콘텐츠가 아니라 패널(서랍) 자체가
@@ -1820,6 +1835,19 @@ function enforceCentering() {
       child.style.setProperty("align-self", "center", "important");
       child.style.setProperty("float", "none", "important");
     });
+
+    // 일부 테마는 패널의 좌우 padding을 다르게 준다. 이 경우 width:100%와
+    // margin:auto만으로는 화면 전체 기준 중앙이 되지 않는다. 실제 패널과
+    // 블록의 중심점 차이를 재서 전체 블록을 그만큼 보정한다.
+    if (panel) {
+      const panelRect = panel.getBoundingClientRect();
+      const blockRect = block.getBoundingClientRect();
+      const previous = Number(block.dataset.seCenterShift || 0);
+      const next = calculateCenterShift(panelRect, blockRect, previous);
+      block.dataset.seCenterShift = String(next);
+      state.centerShift = next;
+      block.style.setProperty("translate", `${next}px 0`, "important");
+    }
   }
 }
 
@@ -1887,7 +1915,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.60 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.61 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1909,7 +1937,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.60 debug dump`];
+  const lines = [`[simple extension] v0.7.61 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
