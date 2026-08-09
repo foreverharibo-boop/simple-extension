@@ -304,8 +304,36 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.59 debug report`];
+  const lines = [`[simple extension] v0.7.60 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
+  lines.push(`중앙정렬 강제 실행 횟수: ${state.centerCount || 0}`);
+  lines.push("");
+  lines.push("===== 중앙정렬 진단 (각 층의 좌우 위치/여백) =====");
+  {
+    const vw = Math.round(window.innerWidth);
+    lines.push(`  뷰포트 폭: ${vw}px`);
+    const layers = [
+      ["패널 #rm_extensions_block", document.getElementById("rm_extensions_block")],
+      ["블록 .extensions_block", state.root],
+      ["상단바 .se-native-topbar", state.root?.querySelector(".se-native-topbar")],
+      ["UI #simple-extension-ui", state.ui],
+      ["리스트 .se-extension-list", state.ui?.querySelector(".se-extension-list")],
+      ["첫 알약", state.ui?.querySelector(".se-fixed-extension-header")],
+    ];
+    layers.forEach(([name, el]) => {
+      if (!(el instanceof HTMLElement)) {
+        lines.push(`  ${name}: (없음)`);
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      const leftGap = Math.round(r.left);
+      const rightGap = Math.round(vw - r.right);
+      lines.push(
+        `  ${name}: L${leftGap} R${rightGap} w${Math.round(r.width)} | pad ${cs.paddingLeft}/${cs.paddingRight} | mar ${cs.marginLeft}/${cs.marginRight} | pos ${cs.position} left:${cs.left} right:${cs.right}`,
+      );
+    });
+  }
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
   );
@@ -1761,6 +1789,7 @@ function consolidateLegacyExtrasApi() {
 }
 
 function enforceCentering() {
+  state.centerCount = (state.centerCount || 0) + 1;
   // 스샷 확인 결과 왼쪽 치우침의 실체는 콘텐츠가 아니라 패널(서랍) 자체가
   // 뷰포트에서 왼쪽에 앉아 오른쪽에 틈이 남는 것. 안쪽 콘텐츠는 원래대로
   // 꽉 채우고(폭 강제 제거), 패널 자체를 가운데로 민다.
@@ -1858,7 +1887,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.59 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.60 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1880,7 +1909,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.59 debug dump`];
+  const lines = [`[simple extension] v0.7.60 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
