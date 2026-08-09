@@ -1257,3 +1257,18 @@
   text-overflow: clip !important;
   white-space: nowrap !important;
 }
+
+/* 확장 패널 전체(상단바+리스트)를 통째로 가로 중앙 정렬. 테마가 콘텐츠를
+   왼쪽으로 붙이는 경우 대비해 블록 자체를 중앙 정렬 컬럼으로 강제한다. */
+#rm_extensions_block .extensions_block[data-se-theme] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+#rm_extensions_block .extensions_block[data-se-theme] > * {
+  width: 100%;
+  max-width: 820px;
+  margin-inline: auto !important;
+  align-self: center !important;
+}

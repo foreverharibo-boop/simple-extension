@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.54 debug report`];
+  const lines = [`[simple extension] v0.7.55 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1819,7 +1819,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.54 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.55 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1841,7 +1841,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.54 debug dump`];
+  const lines = [`[simple extension] v0.7.55 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
