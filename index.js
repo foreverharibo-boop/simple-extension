@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.58 debug report`];
+  const lines = [`[simple extension] v0.7.59 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1766,6 +1766,11 @@ function enforceCentering() {
   // 꽉 채우고(폭 강제 제거), 패널 자체를 가운데로 민다.
   const panel = document.getElementById("rm_extensions_block");
   if (panel) {
+    // ST 서랍은 position:absolute + width:var(--sheldWidth). 이 구조의 중앙
+    // 정렬은 left:0 + right:0 + margin:auto 3종 세트가 모두 있어야 작동한다.
+    // 테마가 right를 풀어버리면 왼쪽 앵커가 되므로 셋 다 인라인으로 강제.
+    panel.style.setProperty("left", "0", "important");
+    panel.style.setProperty("right", "0", "important");
     panel.style.setProperty("margin-left", "auto", "important");
     panel.style.setProperty("margin-right", "auto", "important");
     panel.style.setProperty("float", "none", "important");
@@ -1853,7 +1858,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.58 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.59 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1875,7 +1880,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.58 debug dump`];
+  const lines = [`[simple extension] v0.7.59 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
