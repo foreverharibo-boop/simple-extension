@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.52 debug report`];
+  const lines = [`[simple extension] v0.7.54 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1693,6 +1693,22 @@ function styleNativeTopBar() {
   const heading = bar.querySelector("h3");
   if (heading) heading.textContent = "확장";
 
+  // 3개 버튼(업데이트 알림/확장 관리/확장 설치)을 전용 nowrap 행으로 묶어
+  // 무슨 일이 있어도 한 줄에 유지되게 한다. 안 들어가면 CSS가 강제 축소.
+  if (!bar.querySelector(".se-topbar-actions")) {
+    const notifyLabel =
+      notify?.closest(".checkbox_label") || notify?.parentElement;
+    const actionEls = [notifyLabel, details, install].filter(
+      (el) => el && bar.contains(el),
+    );
+    if (actionEls.length) {
+      const actions = document.createElement("div");
+      actions.className = "se-topbar-actions se-ignore-native";
+      actionEls[0].before(actions);
+      actionEls.forEach((el) => actions.append(el));
+    }
+  }
+
   if (!bar.querySelector(".se-native-palette")) {
     const palette = document.createElement("button");
     palette.type = "button";
@@ -1803,7 +1819,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.52 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.54 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1825,7 +1841,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.52 debug dump`];
+  const lines = [`[simple extension] v0.7.54 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
