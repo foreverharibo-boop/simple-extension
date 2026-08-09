@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.57 debug report`];
+  const lines = [`[simple extension] v0.7.58 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1761,8 +1761,15 @@ function consolidateLegacyExtrasApi() {
 }
 
 function enforceCentering() {
-  // 테마가 콘텐츠를 왼쪽으로 붙이는 CSS를 걸어도 이기도록, 블록/상단바/UI에
-  // 인라인 !important로 중앙 정렬을 직접 박는다. 인라인은 어떤 시트보다 강함.
+  // 스샷 확인 결과 왼쪽 치우침의 실체는 콘텐츠가 아니라 패널(서랍) 자체가
+  // 뷰포트에서 왼쪽에 앉아 오른쪽에 틈이 남는 것. 안쪽 콘텐츠는 원래대로
+  // 꽉 채우고(폭 강제 제거), 패널 자체를 가운데로 민다.
+  const panel = document.getElementById("rm_extensions_block");
+  if (panel) {
+    panel.style.setProperty("margin-left", "auto", "important");
+    panel.style.setProperty("margin-right", "auto", "important");
+    panel.style.setProperty("float", "none", "important");
+  }
   const block = state.root;
   if (block) {
     block.style.setProperty("display", "flex", "important");
@@ -1772,8 +1779,8 @@ function enforceCentering() {
     [...block.children].forEach((child) => {
       if (!(child instanceof HTMLElement)) return;
       if (child.classList.contains("se-native-source")) return; // 숨긴 원본 컬럼
-      child.style.setProperty("width", "90%", "important");
-      child.style.setProperty("max-width", "780px", "important");
+      child.style.setProperty("width", "100%", "important");
+      child.style.removeProperty("max-width");
       child.style.setProperty("margin-left", "auto", "important");
       child.style.setProperty("margin-right", "auto", "important");
       child.style.setProperty("align-self", "center", "important");
@@ -1846,7 +1853,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.57 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.58 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1868,7 +1875,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.57 debug dump`];
+  const lines = [`[simple extension] v0.7.58 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
