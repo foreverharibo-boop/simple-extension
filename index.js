@@ -304,7 +304,7 @@ function outlineWithGeometry(node, pillRect, depth = 0, lines = []) {
 }
 
 function buildDebugReport() {
-  const lines = [`[simple extension] v0.7.55 debug report`];
+  const lines = [`[simple extension] v0.7.56 debug report`];
   lines.push(`align 보정 적용 횟수: ${state.alignCount || 0}`);
   lines.push(
     `잡힌 에러 (${state.debugErrors?.length || 0}건):${state.debugErrors?.length ? "" : " 없음"}`,
@@ -1386,6 +1386,11 @@ function normalizeAllNativeUnits() {
   if (state.normalizing || state.rendering) return;
   state.normalizing = true;
   try {
+    try {
+      enforceCentering();
+    } catch (error) {
+      recordDebugError("centering", error);
+    }
     state.nativeUnits.forEach((unit) => {
       if (!state.ui?.contains(unit.element)) return;
       // 유닛 하나에서 에러가 나도 나머지 유닛 처리는 계속되도록 단계별 격리
@@ -1755,6 +1760,28 @@ function consolidateLegacyExtrasApi() {
   if (hr?.tagName === "HR") hr.remove();
 }
 
+function enforceCentering() {
+  // 테마가 콘텐츠를 왼쪽으로 붙이는 CSS를 걸어도 이기도록, 블록/상단바/UI에
+  // 인라인 !important로 중앙 정렬을 직접 박는다. 인라인은 어떤 시트보다 강함.
+  const block = state.root;
+  if (block) {
+    block.style.setProperty("display", "flex", "important");
+    block.style.setProperty("flex-direction", "column", "important");
+    block.style.setProperty("align-items", "center", "important");
+    block.style.setProperty("justify-content", "flex-start", "important");
+    [...block.children].forEach((child) => {
+      if (!(child instanceof HTMLElement)) return;
+      if (child.classList.contains("se-native-source")) return; // 숨긴 원본 컬럼
+      child.style.setProperty("width", "min(100%, 780px)", "important");
+      child.style.setProperty("max-width", "780px", "important");
+      child.style.setProperty("margin-left", "auto", "important");
+      child.style.setProperty("margin-right", "auto", "important");
+      child.style.setProperty("align-self", "center", "important");
+      child.style.setProperty("float", "none", "important");
+    });
+  }
+}
+
 function initialize() {
   if (state.initialized) return true;
   const root = document.querySelector("#rm_extensions_block .extensions_block");
@@ -1819,7 +1846,7 @@ function initialize() {
     }
   });
 
-  console.info("[simple extension] v0.7.55 loaded — native SillyTavern layout themed");
+  console.info("[simple extension] v0.7.56 loaded — native SillyTavern layout themed");
   return true;
 }
 
@@ -1841,7 +1868,7 @@ function outlineElement(element, depth = 0, maxDepth = 5) {
 
 globalThis.simpleExtensionDebug = (filter = "") => {
   const query = String(filter).toLocaleLowerCase();
-  const lines = [`[simple extension] v0.7.55 debug dump`];
+  const lines = [`[simple extension] v0.7.56 debug dump`];
   state.nativeUnits.forEach((unit) => {
     if (query && !unit.title.toLocaleLowerCase().includes(query)) return;
     lines.push(`===== ${unit.title} (${unit.key}) =====`);
